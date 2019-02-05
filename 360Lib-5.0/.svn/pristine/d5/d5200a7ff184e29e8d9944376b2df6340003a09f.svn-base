@@ -1,0 +1,66 @@
+﻿This document provides example scripts to generate evil viewports.
+
+	#source viewport center yaw pitch set, static viewport1 and static viewport2
+	src_vpc = {
+		"SkateboardInLot"     : [[-225,  20], [ -20,  10]],
+		"ChairliftRide"       : [[   0,   0], [-156, -58]],
+		"KiteFlite"           : [[ -69, -38], [  58, -26]],
+		"Harbor"              : [[ -38, -41], [ -95,  27]],
+		"Trolley"             : [[ 255,  -3], [  75, -29]],
+		"GasLamp"             : [[  −6,   4], [ 106,   0]],
+		"PoleVault"           : [[  0,    0], [  77, −38]],
+		"AerialCity"          : [[  0,    0], [ 122, −39]],
+		"DrivingInCity"       : [[ 14,  −29], [  90,   0]],
+		"DrivingInCountry"    : [[  0,    0], [ 136, −32]],
+	}
+	#destination evil viewport center yaw pitch set, vertex1 and vertex2, as defined in JVET-F1030.
+	dst_vpc = {
+		"PERP"    : [[-180,   0], [0,      0]],
+		"CMP"     : [[-135,  35], [45,   -35]],
+		"CISP1"   : [[   0,  27], [-141, -90]],
+		"COHP1"   : [[-180,  45], [0,     45]],
+		"SSP_vert": [[-180,  45], [90,   -45]],
+		"EAP"     : [[-180, -90], [0,    -90]],
+		"ACP"     : [[-135,  35], [45,   -35]],
+		"RSP"     : [[-135,   0], [0,    -45]],
+	}
+
+1.	For a particular projection format, below 4 decoded evil viewports should be provided for each sequence. 
+	a)	static viewport 1 located at vertex 1
+	b)	static viewport 1 located at vertex 2
+	c)	static viewport 2 located at vertex 1 
+	d)	static viewport 2 located at vertex 2
+	
+	Let vp_idx in {static_viewport1, static_viewport2}, vtx_idx in {vertex1, vertex2}, vr_format in {PERP, CMP, CISP1, COHP1, SSP_vert, EAP, ACP, RSP}, and clip in {SkateboardInLot, ChairliftRide, KiteFlite, Harbor, Trolley, GasLamp, PoleVault, AerialCity, DrivingInCity, DrivingInCountry}, then the evil viewport is obtained as follows.
+	
+	•	Step (1). Perform a pure ERP-to-ERP rotation, and the output frame size is the same with the input. The conversion is done using internal and output bitdepth to 10.
+  
+		yaw_step1 = src_vpc[clip][vp_idx][0]
+		pitch_step1 = dst_vpc[vr_format][vtx_idx][1] - src_vpc[clip][vp_idx][1]
+		
+		an example when clip=Horbar:
+		./bin/TApp360ConvertStatic -c ./cfg-360Lib/360Lib/360convert_ERP_ERP.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor.cfg -i ./test_seq/Harbor_8192x4096_30fps_8bit_420_erp.yuv --CodingFaceWidth=8192 --CodingFaceHeight=4096 --SVideoRotation="yaw_step1 pitch_step1 0" --InternalBitDepth=10 --OutputBitDepth=10
+		
+	•	Step (2). Example of performing encoding at qp37 and qpif 128 together with format conversion and rotation. Required evil viewport PSNR and other PSNRs are obtained during this process.
+  
+		yaw_step2 = -dst_vpc[vr_format][vtx_idx][0]
+		pitch_step2 = 0
+        dst_pitch = dst_vpc[vr_format][vtx_idx][1]
+
+        The required evil viewport PSNR is obtained by specifing the viewport to be (0,dst_pitch)
+    
+		an example when clip=Horbar, vr_format=CMP:
+		./bin/TAppEncoderStatic -c ./cfg/encoder_randomaccess_main10.cfg -c ./cfg-360Lib/encoder_360_CMP.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor_Viewports.cfg -i conv.yuv --CodingFaceWidth=3552 --CodingFaceHeight=2368 --SVideoRotation="yaw_step2 pitch_step2 0" --IntraPeriod=32 -b test.bin --SEIDecodedPictureHash=0 -q 37 -qpif 128 --InputBitDepth=10 --ViewPortList="1 75 75 0 dst_pitch"
+		
+		an example when clip=Horbar, vr_format=PERP:
+		./bin/TAppEncoderStatic -c ./cfg/encoder_randomaccess_main10.cfg -c ./cfg-360Lib/encoder_360_PERP.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor_Viewports.cfg -i conv.yuv --CodingFaceWidth=4096 --CodingFaceHeight=2048 --SVideoRotation="yaw_step2 pitch_step2 0" --IntraPeriod=32 -b test.bin --SEIDecodedPictureHash=0 -q 37 -qpif 128 --InputBitDepth=10 --ViewPortList="1 75 75 0 dst_pitch"
+		
+	•	Step (3). Extract the identified evil viewport from the decoded yuv by using bilinear filter with appropriate viewport size.
+		dst_yaw = dst_vpc[vr_format][vtx_idx][0]
+		dst_pitch = dst_vpc[vr_format][vtx_idx][1]
+		
+		an example when clip=Horbar, vr_format=CMP:
+		./bin/TApp360ConvertStatic -c ./cfg-360Lib/360Lib/360convert_Cubemap3x2_RVP.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor.cfg -i rec.yuv --SourceWidth=3552 --SourceHeight=2368 --ViewPortSettings="75 75 dst_yaw dst_pitch" --InputBitDepth=10 --InternalBitDepth=10 --OutputBitDepth=10 -o evil_viewport.yuv -interpY 2 -interpC 2 --CodingFaceWidth=1816 --CodingFaceHeight=1816
+    
+		an example when clip=Horbar, vr_format=PERP:
+		./bin/TApp360ConvertStatic -c ./cfg-360Lib/360Lib/360convert_PERP_RVP.cfg -c ./cfg-360Lib/per-sequence/360/360test_Harbor.cfg -i rec.yuv --SourceWidth=4112 --SourceHeight=2048 --ViewPortSettings="75 75 dst_yaw dst_pitch" --InputBitDepth=10 --InternalBitDepth=10 --OutputBitDepth=10 -o evil_viewport.yuv -interpY 2 -interpC 2 --CodingFaceWidth=1816 --CodingFaceHeight=1816

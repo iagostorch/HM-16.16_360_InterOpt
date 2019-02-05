@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>-c ..\cfg-360Lib\360Lib\360convert_ERP_SSERP.cfg -c ..\cfg-360Lib\per-sequence\360\360test_AerialCity.cfg -i C:\test_seq\360\abyss_great_shark_vr_30p_3840x1920_30frms.yuv --CodingFaceWidth=1920 --CodingFaceHeight=960 -f 1 -o erp.yuv </LocalDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)..\..\bin</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommandArguments>-c ..\cfg-360Lib\360Lib\360convert_ACP_ERP.cfg -c ..\cfg-360Lib\per-sequence\360\360test_AerialCity.cfg -i ACP_2880x1920x10_cf1.yuv --SourceWidth=2880 --SourceHeight=1920 --InputBitDepth=10 --CodingFaceWidth=3840 --CodingFaceHeight=1920 -o test.yuv -f 1 --InternalBitDepth=10 --OutputBitDepth=10</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)..\..\bin</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>

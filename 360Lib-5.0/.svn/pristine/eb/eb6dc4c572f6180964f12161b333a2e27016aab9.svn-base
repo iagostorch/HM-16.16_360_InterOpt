@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>-c ..\cfg\360Lib\360convert_ERP_RVP.cfg -c ..\cfg\per-sequence\360\360test_Harbor.cfg -i Z:\Yuwen\test_seq\360\IDC\Harbor360_8192x4096_30fps_300frames_8bits.yuv --CodingFaceWidth=1816 --CodingFaceHeight=1816 -f 300 -o vp.yuv --DynamicViewPortFile="C:\work\360Video\360Lib_2.0\HM-16.14-360Lib-1.1\cfg\360Lib\dynamic_viewport.txt" -interpY 2 -interpC 2</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)..\..\bin</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>

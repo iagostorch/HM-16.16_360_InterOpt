@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommandArguments>-c  ..\cfg\encoder_randomaccess_jvet10.cfg -c ..\cfg-360Lib\encoder_360_CMP.cfg -c ..\cfg-360Lib\per-sequence\360\360test_AerialCity.cfg -i C:\test_seq\360\abyss_great_shark_vr_30p_3840x1920_30frms.yuv --CodingFaceWidth=240 --CodingFaceHeight=240 -f 1  -q 27 -b test.bin -fs 10 --SEIDecodedPictureHash=0 --QPIncrementFrame=5</LocalDebuggerCommandArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)..\..\bin</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>
