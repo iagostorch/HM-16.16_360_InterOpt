@@ -43,7 +43,12 @@
 #include "TLibCommon/Debug.h"
 #include <math.h>
 #include <limits>
+#include <fstream>
 
+// iagostorch begin
+extern ofstream mvFile;
+int didRaster = 0;  // Variable to track if the TZS performed the raster scan for the current PU
+// iagostorch end
 
 //! \ingroup TLibEncoder
 //! \{
@@ -3720,13 +3725,104 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   m_pcRdCost->setCostScale  ( 2 );
 
   setWpScalingDistParam( pcCU, iRefIdxPred, eRefPicList );
+  
+//  // iagostorch begin
+//  
+//  Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
+//  pcCU->getPartPosition(iPartIdx, xPU, yPU, widthPU, heightPU);
+//  
+//  PartSize puSize = pcCU->getPartitionSize(iPartIdx); // Variable to save the PU TYPE, e.g., 2Nx2N, nLx2N (see enum PartSize)
+//  
+//  //  Print PU type, position and size. Works for both TZS and Full Search
+//  switch(puSize)
+//  {
+//      case SIZE_2Nx2N:
+//          cout << "\nPU 2Nx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_2NxN:    
+//          cout << "\nPU 2NxN\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_Nx2N:    
+//          cout << "\nPU Nx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_NxN:    
+//          cout << "\nPU NxN\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_2NxnU:    
+//          cout << "\nPU 2NxnU\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_2NxnD:    
+//          cout << "\nPU 2NxnD\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_nLx2N:    
+//          cout << "\nPU nLx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      case SIZE_nRx2N:    
+//          cout << "\nPU nRx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;
+//      default:
+//          cout << "\nsize\t" << puSize << " Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+//          break;   
+//  }
+  
+  //iagostorch end
+  
   //  Do integer search
   if ( (m_motionEstimationSearchMethod==MESEARCH_FULL) || bBi )
   {
+    // FULL SEARCH    iagostorch
     xPatternSearch      ( pcPatternKey, piRefY, iRefStride, &cMvSrchRngLT, &cMvSrchRngRB, rcMv, ruiCost );
   }
   else
   {
+    // FAST SEARCH iagostorch
+    // iagostorch begin
+    Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
+    pcCU->getPartPosition(iPartIdx, xPU, yPU, widthPU, heightPU);
+  
+    PartSize puSize = pcCU->getPartitionSize(iPartIdx); // Variable to save the PU TYPE, e.g., 2Nx2N, nLx2N (see enum PartSize)
+    
+    switch(puSize)
+    {
+      case SIZE_2Nx2N:
+//          cout << "\nPU 2Nx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "2Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_2NxN:    
+//          cout << "\nPU 2NxN " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "2NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_Nx2N:    
+//          cout << "\nPU Nx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_NxN:    
+//          cout << "\nPU NxN " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_2NxnU:    
+//          cout << "\nPU 2NxnU " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "2NxnU" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_2NxnD:    
+//          cout << "\nPU 2NxnD " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "2NxnD" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_nLx2N:    
+//          cout << "\nPU nLx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "nLx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      case SIZE_nRx2N:    
+//          cout << "\nPU nRx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "nRx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;
+      default:
+//          cout << "\nsize " << puSize << " Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
+          mvFile << "size" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+          break;   
+    }
+    // iagostorch end
+      
     rcMv = *pcMvPred;
     const TComMv *pIntegerMv2Nx2NPred=0;
     if (pcCU->getPartitionSize(0) != SIZE_2Nx2N || pcCU->getDepth(0) != 0)
@@ -3743,6 +3839,7 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   m_pcRdCost->selectMotionLambda( true, 0, pcCU->getCUTransquantBypass(uiPartAddr) );
   m_pcRdCost->setCostScale ( 1 );
 
+  // Fractional motion estimation (FME) iagostorch
   const Bool bIsLosslessCoded = pcCU->getCUTransquantBypass(uiPartAddr) != 0;
   xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
 
@@ -3750,7 +3847,8 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   rcMv <<= 2;
   rcMv += (cMvHalf <<= 1);
   rcMv +=  cMvQter;
-
+  // rcMv has the MV after FME. The vector is multiplied by 4
+  
   UInt uiMvBits = m_pcRdCost->getBitsOfVectorWithPredictor( rcMv.getHor(), rcMv.getVer() );
 
   ruiBits      += uiMvBits;
@@ -3866,7 +3964,8 @@ Void TEncSearch::xPatternSearchFast( const TComDataCU* const  pcCU,
 
   switch ( m_motionEstimationSearchMethod )
   {
-    case MESEARCH_DIAMOND:
+    // Types of Fast motion estimation from TZS/TZ Search/Test zone search iagostorch
+    case MESEARCH_DIAMOND:  
       xTZSearch( pcCU, pcPatternKey, piRefY, iRefStride, pcMvSrchRngLT, pcMvSrchRngRB, rcMv, ruiSAD, pIntegerMv2Nx2NPred, false );
       break;
 
@@ -3964,7 +4063,12 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
       xTZSearchHelp( pcPatternKey, cStruct, 0, 0, 0, 0 );
     }
   }
-
+  
+  // iagostorch begin
+  // Here we know which is the predicted MV/MVP
+//  cout << " Predicted XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
+  mvFile << cStruct.iBestX << "x" << cStruct.iBestY << ",";
+  
   Int   iSrchRngHorLeft   = pcMvSrchRngLT->getHor();
   Int   iSrchRngHorRight  = pcMvSrchRngRB->getHor();
   Int   iSrchRngVerTop    = pcMvSrchRngLT->getVer();
@@ -4072,6 +4176,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
     xTZ2PointSearch( pcPatternKey, cStruct, pcMvSrchRngLT, pcMvSrchRngRB );
   }
 
+  // Here we know the initial MV
+//  cout << " Initial XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
+  mvFile << cStruct.iBestX << "x" << cStruct.iBestY << ",";
+  
   // raster search if distance is too big
   if (bUseAdaptiveRaster)
   {
@@ -4102,6 +4210,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
   {
     if ( bEnableRasterSearch && ( ((Int)(cStruct.uiBestDistance) > iRaster) || bAlwaysRasterSearch ) )
     {
+      // iagostorch begin 
+      // track if raster scan is done
+      didRaster = 1;
+      // iagostorcg end
       cStruct.uiBestDistance = iRaster;
       for ( iStartY = iSrchRngVerTop; iStartY <= iSrchRngVerBottom; iStartY += iRaster )
       {
@@ -4113,6 +4225,17 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
     }
   }
 
+  // iagostorch begin
+  // Here we know the result of raster scan
+  if(didRaster){
+//      cout << " Raster XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
+      mvFile << cStruct.iBestX << "x" << cStruct.iBestY << ",";
+  }
+  else{
+      mvFile << ",";
+  }
+  didRaster = 0; // reset the variable
+  //iagostorch end
   // raster refinement
 
   if ( bRasterRefinementEnable && cStruct.uiBestDistance > 0 )
@@ -4185,6 +4308,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
 
   // write out best match
   rcMv.set( cStruct.iBestX, cStruct.iBestY );
+  // Here we know the MV after refinement
+//  cout << " Refined XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
+  mvFile << cStruct.iBestX << "x" << cStruct.iBestY << endl;
+  
   ruiSAD = cStruct.uiBestSad - m_pcRdCost->getCostOfVectorWithPredictor( cStruct.iBestX, cStruct.iBestY );
 }
 

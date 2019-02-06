@@ -37,8 +37,13 @@
 
 #include <time.h>
 #include <iostream>
+#include <fstream>
 #include "TAppEncTop.h"
 #include "TAppCommon/program_options_lite.h"
+
+// iagostorch begin
+ofstream mvFile;
+// iagostorch end
 
 //! \ingroup TAppEncoder
 //! \{
@@ -51,6 +56,10 @@
 
 int main(int argc, char* argv[])
 {
+  // iagostorch begin
+  mvFile.open("mvFile.csv");
+  mvFile << "PU,Pos,Size,Pred,Inic,Rast,Refi" << endl;
+  // iagostorch end
   TAppEncTop  cTAppEncTop;
 
   // print information
@@ -81,7 +90,7 @@ int main(int argc, char* argv[])
     std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
     return 1;
   }
-
+  
 #if PRINT_MACRO_VALUES
   printMacroSettings();
 #endif
@@ -104,6 +113,10 @@ int main(int argc, char* argv[])
   // destroy application encoder class
   cTAppEncTop.destroy();
 
+  // iagostorch begin
+  mvFile.close();
+  // iagostorch end
+  
   return 0;
 }
 
