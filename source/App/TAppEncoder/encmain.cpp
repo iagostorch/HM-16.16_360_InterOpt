@@ -43,6 +43,7 @@
 
 // iagostorch begin
 ofstream mvFile;
+ofstream finalPUMVFile;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -59,6 +60,8 @@ int main(int argc, char* argv[])
   // iagostorch begin
   mvFile.open("mvFile.csv");
   mvFile << "PU,Pos,Size,Pred,Inic,Rast,Refi" << endl;
+  finalPUMVFile.open("finalPU.csv");
+  finalPUMVFile << "CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
   // iagostorch end
   TAppEncTop  cTAppEncTop;
 
@@ -115,6 +118,7 @@ int main(int argc, char* argv[])
 
   // iagostorch begin
   mvFile.close();
+  finalPUMVFile.close();
   // iagostorch end
   
   return 0;
