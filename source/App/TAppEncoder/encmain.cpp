@@ -44,6 +44,7 @@
 // iagostorch begin
 ofstream mvFile;
 ofstream finalPUMVFile;
+Int extractOnlyRasterPUs = 1;
 // iagostorch end
 
 //! \ingroup TAppEncoder

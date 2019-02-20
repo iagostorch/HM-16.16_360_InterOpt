@@ -48,6 +48,9 @@
 // iagostorch begin
 extern ofstream mvFile;
 int didRaster = 0;  // Variable to track if the TZS performed the raster scan for the current PU
+Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
+PartSize puSize;
+extern Int extractOnlyRasterPUs;
 // iagostorch end
 
 //! \ingroup TLibEncoder
@@ -3726,47 +3729,6 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
 
   setWpScalingDistParam( pcCU, iRefIdxPred, eRefPicList );
   
-//  // iagostorch begin
-//  
-//  Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
-//  pcCU->getPartPosition(iPartIdx, xPU, yPU, widthPU, heightPU);
-//  
-//  PartSize puSize = pcCU->getPartitionSize(iPartIdx); // Variable to save the PU TYPE, e.g., 2Nx2N, nLx2N (see enum PartSize)
-//  
-//  //  Print PU type, position and size. Works for both TZS and Full Search
-//  switch(puSize)
-//  {
-//      case SIZE_2Nx2N:
-//          cout << "\nPU 2Nx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_2NxN:    
-//          cout << "\nPU 2NxN\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_Nx2N:    
-//          cout << "\nPU Nx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_NxN:    
-//          cout << "\nPU NxN\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_2NxnU:    
-//          cout << "\nPU 2NxnU\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_2NxnD:    
-//          cout << "\nPU 2NxnD\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_nLx2N:    
-//          cout << "\nPU nLx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      case SIZE_nRx2N:    
-//          cout << "\nPU nRx2N\t" << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;
-//      default:
-//          cout << "\nsize\t" << puSize << " Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-//          break;   
-//  }
-  
-  //iagostorch end
-  
   //  Do integer search
   if ( (m_motionEstimationSearchMethod==MESEARCH_FULL) || bBi )
   {
@@ -3777,50 +3739,8 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   {
     // FAST SEARCH iagostorch
     // iagostorch begin
-    Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
     pcCU->getPartPosition(iPartIdx, xPU, yPU, widthPU, heightPU);
-  
-    PartSize puSize = pcCU->getPartitionSize(iPartIdx); // Variable to save the PU TYPE, e.g., 2Nx2N, nLx2N (see enum PartSize)
-    
-    switch(puSize)
-    {
-      case SIZE_2Nx2N:
-//          cout << "\nPU 2Nx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "2Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_2NxN:    
-//          cout << "\nPU 2NxN " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "2NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_Nx2N:    
-//          cout << "\nPU Nx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_NxN:    
-//          cout << "\nPU NxN " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_2NxnU:    
-//          cout << "\nPU 2NxnU " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "2NxnU" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_2NxnD:    
-//          cout << "\nPU 2NxnD " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "2NxnD" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_nLx2N:    
-//          cout << "\nPU nLx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "nLx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      case SIZE_nRx2N:    
-//          cout << "\nPU nRx2N " << "Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "nRx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;
-      default:
-//          cout << "\nsize " << puSize << " Pos XY " << xPU << "x" << yPU << "\tSize " << widthPU << "x" << heightPU;// << endl;
-          mvFile << "size" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
-          break;   
-    }
+    puSize = pcCU->getPartitionSize(iPartIdx); // Variable to save the PU TYPE, e.g., 2Nx2N, nLx2N (see enum PartSize)
     // iagostorch end
       
     rcMv = *pcMvPred;
@@ -4030,6 +3950,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
   cStruct.piRefY      = piRefY;
   cStruct.uiBestSad   = MAX_UINT;
 
+  // iagostorch begin
+  IntTZSearchStruct predMV, initMV, rastMV, refiMV; // Variables to keep the resulting MV for each step
+  // iagostorch end
+  
   // set rcMv (Median predictor) as start point and as best point
   xTZSearchHelp( pcPatternKey, cStruct, rcMv.getHor(), rcMv.getVer(), 0, 0 );
 
@@ -4066,8 +3990,8 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
   
   // iagostorch begin
   // Here we know which is the predicted MV/MVP
-//  cout << " Predicted XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
-  mvFile << cStruct.iBestX << "x" << cStruct.iBestY << ",";
+  predMV = cStruct;
+  // iagostorch end
   
   Int   iSrchRngHorLeft   = pcMvSrchRngLT->getHor();
   Int   iSrchRngHorRight  = pcMvSrchRngRB->getHor();
@@ -4176,9 +4100,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
     xTZ2PointSearch( pcPatternKey, cStruct, pcMvSrchRngLT, pcMvSrchRngRB );
   }
 
+  // iagostorch begin
   // Here we know the initial MV
-//  cout << " Initial XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
-  mvFile << cStruct.iBestX << "x" << cStruct.iBestY << ",";
+  initMV = cStruct;
+  // iagostorch end
   
   // raster search if distance is too big
   if (bUseAdaptiveRaster)
@@ -4213,29 +4138,23 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
       // iagostorch begin 
       // track if raster scan is done
       didRaster = 1;
-      // iagostorcg end
+      // iagostorch end
       cStruct.uiBestDistance = iRaster;
       for ( iStartY = iSrchRngVerTop; iStartY <= iSrchRngVerBottom; iStartY += iRaster )
       {
         for ( iStartX = iSrchRngHorLeft; iStartX <= iSrchRngHorRight; iStartX += iRaster )
         {
           xTZSearchHelp( pcPatternKey, cStruct, iStartX, iStartY, 0, iRaster );
+//          cout << "   RasterTest: " << iStartX << "x" << iStartY << "\tResult " << cStruct.iBestX << "x" << cStruct.iBestY <<  endl;
         }
       }
+//      cout << endl;
     }
   }
-
-  // iagostorch begin
-  // Here we know the result of raster scan
-  if(didRaster){
-//      cout << " Raster XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
-      mvFile << cStruct.iBestX << "x" << cStruct.iBestY << ",";
-  }
-  else{
-      mvFile << ",";
-  }
-  didRaster = 0; // reset the variable
+  // Here we know the resulting MV from raster scan
+  rastMV = cStruct; 
   //iagostorch end
+  
   // raster refinement
 
   if ( bRasterRefinementEnable && cStruct.uiBestDistance > 0 )
@@ -4308,9 +4227,96 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
 
   // write out best match
   rcMv.set( cStruct.iBestX, cStruct.iBestY );
+  
+  // iagostorch begin
   // Here we know the MV after refinement
-//  cout << " Refined XY " << cStruct.iBestX << "x" << cStruct.iBestY;// << endl;
-  mvFile << cStruct.iBestX << "x" << cStruct.iBestY << endl;
+  refiMV = cStruct;
+  
+  if(extractOnlyRasterPUs == 1){ // If this is true, only extracts the MV information for PUs which used raster scan
+      if(didRaster == 1){
+            switch(puSize)
+            {
+              case SIZE_2Nx2N:
+                  mvFile << "2Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_2NxN:    
+                  mvFile << "2NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_Nx2N:    
+                  mvFile << "Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_NxN:    
+                  mvFile << "NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_2NxnU:    
+                  mvFile << "2NxnU" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_2NxnD:    
+                  mvFile << "2NxnD" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_nLx2N:    
+                  mvFile << "nLx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              case SIZE_nRx2N:    
+                  mvFile << "nRx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;
+              default:
+                  mvFile << "size" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+                  break;   
+            }
+          
+            mvFile << predMV.iBestX << "x" << predMV.iBestY << ",";
+            mvFile << initMV.iBestX << "x" << initMV.iBestY << ",";
+            mvFile << rastMV.iBestX << "x" << rastMV.iBestY << ",";
+            mvFile << refiMV.iBestX << "x" << refiMV.iBestY << ",";
+            mvFile << endl;         
+      }
+  }
+  else{ // Extracts the MV information for all the PUs
+      switch(puSize)
+        {
+          case SIZE_2Nx2N:
+              mvFile << "2Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_2NxN:    
+              mvFile << "2NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_Nx2N:    
+              mvFile << "Nx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_NxN:    
+              mvFile << "NxN" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_2NxnU:    
+              mvFile << "2NxnU" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_2NxnD:    
+              mvFile << "2NxnD" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_nLx2N:    
+              mvFile << "nLx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          case SIZE_nRx2N:    
+              mvFile << "nRx2N" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;
+          default:
+              mvFile << "size" << "," << xPU << "x" << yPU << "," << widthPU << "x" << heightPU << ",";
+              break;   
+        }
+
+        mvFile << predMV.iBestX << "x" << predMV.iBestY << ",";
+        mvFile << initMV.iBestX << "x" << initMV.iBestY << ",";
+        if(didRaster){
+            mvFile << rastMV.iBestX << "x" << rastMV.iBestY << ",";
+        }
+        else{
+            mvFile << ',';
+        }
+        mvFile << refiMV.iBestX << "x" << refiMV.iBestY << ",";
+        mvFile << endl;
+  }
+  didRaster = 0;
+  // iagostorch end
   
   ruiSAD = cStruct.uiBestSad - m_pcRdCost->getCostOfVectorWithPredictor( cStruct.iBestX, cStruct.iBestY );
 }
