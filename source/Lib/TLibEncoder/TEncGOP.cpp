@@ -54,8 +54,10 @@ using namespace std;
 
 // iagostorch begin
 void getPicData(TComPic *pic);
-void writeCUData(TComDataCU *CTU);
-extern ofstream finalPUMVFile;
+void writeFinalCUData(TComDataCU *CTU);
+
+extern Int extractFinalCuInfo;
+extern ofstream finalCuInfo;
 // iagostorch end
 
 //! \ingroup TLibEncoder
@@ -1569,7 +1571,8 @@ Void TEncGOP::compressGOP( Int iPOCLast, Int iNumPicRcvd, TComList<TComPic*>& rc
 
         // iagostorch begin
         // extracts information for each encoded CTU
-        getPicData(pcPic);
+        if(extractFinalCuInfo)
+            getPicData(pcPic);
         // iagostorch end
         
         const UInt curSliceSegmentEnd = pcSlice->getSliceSegmentCurEndCtuTsAddr();
@@ -3168,16 +3171,16 @@ Void TEncGOP::applyDeblockingFilterParameterSelection( TComPic* pcPic, const UIn
   }
 }
 
-// iagostorcg begin
+// iagostorch begin
 void getPicData(TComPic *pic){
     int i;
     for(i=0; i<pic->getNumberOfCtusInFrame(); i++){
         //printf(">>CTU addr %d\n", i);
-        writeCUData(pic->getCtu(i));
+        writeFinalCUData(pic->getCtu(i));
     }
 }
 
-void writeCUData(TComDataCU *CTU){
+void writeFinalCUData(TComDataCU *CTU){
     int i=0, lenght=0, totalSize;
     int *depth, *predMode, *partSize;
     int pu0=0, pu1=1;//, pu2=2, pu3=3;
@@ -3253,58 +3256,58 @@ void writeCUData(TComDataCU *CTU){
                 case SIZE_2Nx2N:
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2Nx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2Nx2N," << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2Nx2N," << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
                     break;
                 case SIZE_2NxN:    
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxN " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxN " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxN,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxN,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxN,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxN,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
                     
                     break;
                 case SIZE_Nx2N:    
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType Nx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType Nx2N " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",Nx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",Nx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",Nx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",Nx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
                     break;
                 case SIZE_NxN:    
                     cout << "ERROR - The CU was partitioned into 4 iner PUs" << endl;
-                    finalPUMVFile << "ERROR - The CU was partitioned into 4 iner PUs" << endl;
+                    finalCuInfo << "ERROR - The CU was partitioned into 4 iner PUs" << endl;
                     break;
                 case SIZE_2NxnU:    
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnU " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnU " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnU,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnU,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnU,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnU,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
                     break;
                 case SIZE_2NxnD:    
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnD " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnD " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnD,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnD,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnD,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",2NxnD,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
                     break;
                 case SIZE_nLx2N:    
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nLx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nLx2N " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nLx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nLx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nLx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nLx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
                     break;
                 case SIZE_nRx2N:    
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nRx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
 //                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nRx2N " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
                     
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nRx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
-                    finalPUMVFile << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nRx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nRx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    finalCuInfo << CTU->getCtuRsAddr() << "," << CTU->getCUPelX() << "x" << CTU->getCUPelY() << "," << depth[i] << ",nRx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
                     break;
                 default:
                     cout << "ERROR - Incorrect PU type code" << endl;
-                    finalPUMVFile << "ERROR - Incorrect PU type code" << endl;
+                    finalCuInfo << "ERROR - Incorrect PU type code" << endl;
                     break;                       
             }
         }
@@ -3312,5 +3315,5 @@ void writeCUData(TComDataCU *CTU){
 //    } // Target CTU if
     
 }
-
+//iagostorch end
 //! \}

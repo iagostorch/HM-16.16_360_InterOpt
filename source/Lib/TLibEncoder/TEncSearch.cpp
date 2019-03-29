@@ -46,11 +46,14 @@
 #include <fstream>
 
 // iagostorch begin
-extern ofstream mvFile;
 int didRaster = 0;  // Variable to track if the TZS performed the raster scan for the current PU
 Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
 PartSize puSize;
+
 extern Int extractOnlyRasterPUs;
+extern Int extractTZInfo;
+extern ofstream mvFile;
+
 // iagostorch end
 
 //! \ingroup TLibEncoder
@@ -4272,7 +4275,7 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
             mvFile << endl;         
       }
   }
-  else{ // Extracts the MV information for all the PUs
+  else if(extractTZInfo){ // Extracts the MV information for all the PUs
       switch(puSize)
         {
           case SIZE_2Nx2N:

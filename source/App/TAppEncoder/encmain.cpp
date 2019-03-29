@@ -43,8 +43,12 @@
 
 // iagostorch begin
 ofstream mvFile;
-ofstream finalPUMVFile;
+ofstream finalCuInfo;
+ofstream intermediateCuInfo;
 Int extractOnlyRasterPUs = 1;
+Int extractTZInfo = 1;
+Int extractFinalCuInfo = 1;
+Int extractIntermediateCuInfo = 1;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -59,10 +63,18 @@ Int extractOnlyRasterPUs = 1;
 int main(int argc, char* argv[])
 {
   // iagostorch begin
-  mvFile.open("mvFile.csv");
-  mvFile << "PU,Pos,Size,Pred,Inic,Rast,Refi" << endl;
-  finalPUMVFile.open("finalPU.csv");
-  finalPUMVFile << "CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+  if(extractTZInfo){
+    mvFile.open("mvFile.csv");
+    mvFile << "PU,Pos,Size,Pred,Inic,Rast,Refi" << endl;
+  }
+  if(extractFinalCuInfo){
+    finalCuInfo.open("finalPU.csv");
+    finalCuInfo << "CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+  }
+  if(extractIntermediateCuInfo){
+    intermediateCuInfo.open("intermediatePU.csv");
+    intermediateCuInfo << "CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+  }
   // iagostorch end
   TAppEncTop  cTAppEncTop;
 
@@ -118,8 +130,17 @@ int main(int argc, char* argv[])
   cTAppEncTop.destroy();
 
   // iagostorch begin
-  mvFile.close();
-  finalPUMVFile.close();
+  
+  if(extractTZInfo){
+    mvFile.close();
+  }
+  if(extractFinalCuInfo){
+    finalCuInfo.close();
+  }
+  if(extractIntermediateCuInfo){
+    intermediateCuInfo.close();
+  }
+  
   // iagostorch end
   
   return 0;
