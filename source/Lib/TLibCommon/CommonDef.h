@@ -107,6 +107,17 @@ inline Int64 abs (Int64 x) { return _abs64(x); };
 #define NULL              0
 #endif
 
+// iagostorch begin
+// ====================================================================================================================
+// iagostorch constants
+// ====================================================================================================================
+
+static const Float upperThreshold =                             0.25; // upper part of frame is upper band
+static const Float lowerThreshold =                             0.75; // (1 - this) lower part of frame is lower band
+static const Float scaleVerticalSR =                            1.00; // Scales the vertical search range by this factor
+
+// iagostorch end
+
 // ====================================================================================================================
 // Common constants
 // ====================================================================================================================

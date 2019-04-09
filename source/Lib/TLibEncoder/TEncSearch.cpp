@@ -4141,7 +4141,26 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
       // iagostorch begin 
       // track if raster scan is done
       didRaster = 1;
+
+      // In case the current CU is in the polar bands, reduce the vertical search range by scaleVerticalSR
+      // Otherwise, perform the encoding normally
+      Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*upperThreshold;
+      Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*lowerThreshold;
+      int currY = pcCU->getCUPelY();
+      
+      if(currY <= upperBandThreshold){ // If current CU is in upper band
+//          cout << "Upper ";
+          iSrchRngVerTop    = iSrchRngVerTop    * scaleVerticalSR;
+          iSrchRngVerBottom = iSrchRngVerBottom * scaleVerticalSR;
+      }
+      else if(currY >= lowerBandThreshold){ // If current CU is in lower band
+//          cout << "Lower ";
+          iSrchRngVerTop    = iSrchRngVerTop    * scaleVerticalSR;
+          iSrchRngVerBottom = iSrchRngVerBottom * scaleVerticalSR;
+      }
+       
       // iagostorch end
+      
       cStruct.uiBestDistance = iRaster;
       for ( iStartY = iSrchRngVerTop; iStartY <= iSrchRngVerBottom; iStartY += iRaster )
       {
