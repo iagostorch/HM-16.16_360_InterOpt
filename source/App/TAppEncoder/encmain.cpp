@@ -49,6 +49,25 @@ Int extractOnlyRasterPUs = 1;
 Int extractTZInfo = 1;
 Int extractFinalCuInfo = 1;
 Int extractIntermediateCuInfo = 1;
+
+// Variables to track the execution time of some encoding steps
+double rasterTime = 0.0;
+double checkInterTime = 0.0;
+double predInterSearchTime = 0.0;
+double xMotionEstimationTime = 0.0;
+double xPatternSearchFastTime = 0.0;
+double xTZSearchTime = 0.0;
+double xPatternSearchTime = 0.0;
+double checkIntraTime = 0.0;
+double predTime = 0.0;
+double firstTime = 0.0;
+double refinTime = 0.0;
+double calcRdInter = 0.0;
+double checkBestModeInter = 0.0;
+double unipredTime = 0.0;
+double bipredTime = 0.0;
+double motionCompTime = 0.0;
+double fmeTime = 0.0;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -126,6 +145,27 @@ int main(int argc, char* argv[])
   dResult = (Double)(clock()-lBefore) / CLOCKS_PER_SEC;
   printf("\n Total Time: %12.3f sec.\n", dResult);
 
+  // iagostorch begin 
+  
+  cout << endl;
+  cout << "checkIntraTime:  " << checkIntraTime << endl;
+  cout << "checkInterTime:  " << checkInterTime << endl;
+  
+  cout << "|predInterSearchTime:  " << predInterSearchTime << endl;
+  cout << "||xMotionEstimationTime:  " << xMotionEstimationTime << endl;
+  cout << "|||xPatternSearchFastTime:  " << xPatternSearchFastTime << endl;
+  cout << "||||xTZSearchTime:  " << xTZSearchTime << endl;
+  cout << "|||||predTime: " << predTime << endl; 
+  cout << "|||||firstTime: " << firstTime << endl; 
+  cout << "|||||rasterTime: " << rasterTime << endl; 
+  cout << "|||||refinTime: " << refinTime << endl; 
+  cout << "|||xPatternSearchTime:  " << xPatternSearchTime << endl;
+  cout << "|||FME:  " << fmeTime << endl;
+  cout << "|calcRdInter: " << calcRdInter << endl; 
+  cout << "|checkBestModeInter: " << checkBestModeInter << endl; 
+  
+// iagostorch end 
+ 
   // destroy application encoder class
   cTAppEncTop.destroy();
 

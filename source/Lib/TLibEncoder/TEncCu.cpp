@@ -45,10 +45,27 @@
 #include <algorithm>
 using namespace std;
 
+// iagostorch begin
+
+#include <sys/time.h>
+
+// Variables to track execution time of some encoding steps
+struct timeval  tv3, tv4;
+struct timeval  tv5, tv6;
+struct timeval  tv15, tv16;
+struct timeval  tv23, tv24;
+extern double checkInterTime;
+extern double predInterSearchTime;
+extern double checkIntraTime;
+extern double calcRdInter;
+extern double checkBestModeInter;
+
 void writeIntermediateCU(TComDataCU *CU);//{
 
 extern Int extractIntermediateCuInfo;
-extern ofstream intermediateCuInfo;;
+extern ofstream intermediateCuInfo;
+
+// iagostorch end
 
 //! \ingroup TLibEncoder
 //! \{
@@ -440,7 +457,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
 #else
 Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const UInt uiDepth )
 #endif
-{
+{    
   TComPic* pcPic = rpcBestCU->getPic();
   DEBUG_STRING_NEW(sDebug)
   const TComPPS &pps=*(rpcTempCU->getSlice()->getPPS());
@@ -551,8 +568,12 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
       {
         // 2Nx2N
         if(m_pcEncCfg->getUseEarlySkipDetection())
-        {
+        { 
+          gettimeofday(&tv3, NULL); // iagostorch
           xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug) );
+          gettimeofday(&tv4, NULL); // iagostorch
+          checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
+
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );//by Competition for inter_2Nx2N
         }
         // SKIP
@@ -562,7 +583,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         if(!m_pcEncCfg->getUseEarlySkipDetection())
         {
           // 2Nx2N, NxN
+          gettimeofday(&tv3, NULL);   // iagostorch
           xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug) );
+          gettimeofday(&tv4, NULL); // iagostorch
+          checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
           if(m_pcEncCfg->getUseCbfFastMode())
           {
@@ -599,14 +623,20 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           {
             if( uiDepth == sps.getLog2DiffMaxMinCodingBlockSize() && doNotBlockPu)
             {
+              gettimeofday(&tv3, NULL); // iagostorch
               xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_NxN DEBUG_STRING_PASS_INTO(sDebug)   );
+              gettimeofday(&tv4, NULL); // iagostorch
+              checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
               rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             }
           }
 
           if(doNotBlockPu)
           {
+            gettimeofday(&tv3, NULL); // iagostorch
             xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_Nx2N DEBUG_STRING_PASS_INTO(sDebug)  );
+            gettimeofday(&tv4, NULL); // iagostorch
+            checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
             rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_Nx2N )
             {
@@ -615,7 +645,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           }
           if(doNotBlockPu)
           {
+            gettimeofday(&tv3, NULL); // iagostorch
             xCheckRDCostInter      ( rpcBestCU, rpcTempCU, SIZE_2NxN DEBUG_STRING_PASS_INTO(sDebug)  );
+            gettimeofday(&tv4, NULL); // iagostorch
+            checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
             rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxN)
             {
@@ -642,7 +675,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnU )
                 {
@@ -651,7 +687,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnD DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnD )
                 {
@@ -664,7 +703,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnU )
                 {
@@ -673,7 +715,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnD DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnD )
                 {
@@ -688,7 +733,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_nLx2N )
                 {
@@ -697,7 +745,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
               }
             }
@@ -706,7 +757,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_nLx2N )
                 {
@@ -715,7 +769,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
               }
             }
@@ -745,13 +802,19 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
              ((rpcBestCU->getCbf( 0, COMPONENT_Cr ) != 0) && (numberValidComponents > COMPONENT_Cr))  // avoid very complex intra if it is unlikely
             )))
         {
+          gettimeofday(&tv15, NULL); // iagostorch
           xCheckRDCostIntra( rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug) );
+          gettimeofday(&tv16, NULL); // iagostorch
+          checkIntraTime += (double) (tv16.tv_usec - tv15.tv_usec)/1000000 + (double) (tv16.tv_sec - tv15.tv_sec); // iagostorch
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
           if( uiDepth == sps.getLog2DiffMaxMinCodingBlockSize() )
           {
             if( rpcTempCU->getWidth(0) > ( 1 << sps.getQuadtreeTULog2MinSize() ) )
             {
+              gettimeofday(&tv15, NULL); // iagostorch
               xCheckRDCostIntra( rpcBestCU, rpcTempCU, SIZE_NxN DEBUG_STRING_PASS_INTO(sDebug)   );
+              gettimeofday(&tv16, NULL); // iagostorch
+              checkIntraTime += (double) (tv16.tv_usec - tv15.tv_usec)/1000000 + (double) (tv16.tv_sec - tv15.tv_sec); // iagostorch
               rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             }
           }
@@ -1445,7 +1508,11 @@ Void TEncCu::xCheckRDCostInter( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, 
 
 #if AMP_MRG
   rpcTempCU->setMergeAMP (true);
+  gettimeofday(&tv5, NULL); // iagostorch
   m_pcPredSearch->predInterSearch ( rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcRecoYuvTemp[uhDepth] DEBUG_STRING_PASS_INTO(sTest), false, bUseMRG );
+  gettimeofday(&tv6, NULL); // iagostorch
+  predInterSearchTime += (double) (tv6.tv_usec - tv5.tv_usec)/1000000 + (double) (tv6.tv_sec - tv5.tv_sec); // iagostorch
+  
 #else
   m_pcPredSearch->predInterSearch ( rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcRecoYuvTemp[uhDepth] );
 #endif
@@ -1456,16 +1523,22 @@ Void TEncCu::xCheckRDCostInter( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, 
     return;
   }
 #endif
-
+  
+  gettimeofday(&tv23, NULL); // iagostorch
   m_pcPredSearch->encodeResAndCalcRdInterCU( rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcResiYuvBest[uhDepth], m_ppcRecoYuvTemp[uhDepth], false DEBUG_STRING_PASS_INTO(sTest) );
   rpcTempCU->getTotalCost()  = m_pcRdCost->calcRdCost( rpcTempCU->getTotalBits(), rpcTempCU->getTotalDistortion() );
+  gettimeofday(&tv24, NULL); // iagostorch
+  calcRdInter += (double) (tv24.tv_usec - tv23.tv_usec)/1000000 + (double) (tv24.tv_sec - tv23.tv_sec); // iagostorch
 
 #if DEBUG_STRING
   DebugInterPredResiReco(sTest, *(m_ppcPredYuvTemp[uhDepth]), *(m_ppcResiYuvBest[uhDepth]), *(m_ppcRecoYuvTemp[uhDepth]), DebugStringGetPredModeMask(rpcTempCU->getPredictionMode(0)));
 #endif
 
+  gettimeofday(&tv23, NULL); // iagostorch
   xCheckDQP( rpcTempCU );
   xCheckBestMode(rpcBestCU, rpcTempCU, uhDepth DEBUG_STRING_PASS_INTO(sDebug) DEBUG_STRING_PASS_INTO(sTest));
+  gettimeofday(&tv24, NULL); // iagostorch
+  checkBestModeInter += (double) (tv24.tv_usec - tv23.tv_usec)/1000000 + (double) (tv24.tv_sec - tv23.tv_sec); // iagostorch
 }
 
 Void TEncCu::xCheckRDCostIntra( TComDataCU *&rpcBestCU,

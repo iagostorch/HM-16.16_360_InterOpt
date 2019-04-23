@@ -46,6 +46,32 @@
 #include <fstream>
 
 // iagostorch begin
+
+#include <sys/time.h>
+
+// Variables to track execution time of some encoding steps
+struct timeval  tv1, tv2; // raster
+struct timeval  tv7, tv8; // xMotionEstimation
+struct timeval  tv9, tv10; // xPatternSearchFast
+struct timeval  tv11, tv12; // xTEZSearch
+struct timeval  tv13, tv14; // xPatternSearch
+struct timeval  tv17, tv18; // TZ Pred
+struct timeval  tv19, tv20; // TZ First
+struct timeval  tv21, tv22; // TZ Refin
+struct timeval tv25, tv26;
+extern double rasterTime;
+extern double xMotionEstimationTime;
+extern double xPatternSearchFastTime;
+extern double xTZSearchTime;
+extern double xPatternSearchTime;
+extern double predTime;
+extern double firstTime;
+extern double refinTime;
+extern double unipredTime;
+extern double bipredTime;
+extern double motionCompTime;
+extern double fmeTime;
+
 int didRaster = 0;  // Variable to track if the TZS performed the raster scan for the current PU
 Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
 PartSize puSize;
@@ -3020,6 +3046,8 @@ Void TEncSearch::predInterSearch( TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv* 
     {
 #endif
 
+        
+    gettimeofday(&tv25, NULL);
     //  Uni-directional prediction
     for ( Int iRefList = 0; iRefList < iNumPredDir; iRefList++ )
     {
@@ -3065,12 +3093,18 @@ Void TEncSearch::predInterSearch( TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv* 
           }
           else
           {
+            gettimeofday(&tv7, NULL); // iagostorch
             xMotionEstimation ( pcCU, pcOrgYuv, iPartIdx, eRefPicList, &cMvPred[iRefList][iRefIdxTemp], iRefIdxTemp, cMvTemp[iRefList][iRefIdxTemp], uiBitsTemp, uiCostTemp );
+            gettimeofday(&tv8, NULL); // iagostorch
+            xMotionEstimationTime += (double) (tv8.tv_usec - tv7.tv_usec)/1000000 + (double) (tv8.tv_sec - tv7.tv_sec); // iagostorch
           }
         }
         else
         {
+          gettimeofday(&tv7, NULL); // iagostorch
           xMotionEstimation ( pcCU, pcOrgYuv, iPartIdx, eRefPicList, &cMvPred[iRefList][iRefIdxTemp], iRefIdxTemp, cMvTemp[iRefList][iRefIdxTemp], uiBitsTemp, uiCostTemp );
+          gettimeofday(&tv8, NULL); // iagostorch
+          xMotionEstimationTime += (double) (tv8.tv_usec - tv7.tv_usec)/1000000 + (double) (tv8.tv_sec - tv7.tv_sec); // iagostorch
         }
         xCopyAMVPInfo(pcCU->getCUMvField(eRefPicList)->getAMVPInfo(), &aacAMVPInfo[iRefList][iRefIdxTemp]); // must always be done ( also when AMVP_MODE = AM_NONE )
         xCheckBestMVP(pcCU, eRefPicList, cMvTemp[iRefList][iRefIdxTemp], cMvPred[iRefList][iRefIdxTemp], aaiMvpIdx[iRefList][iRefIdxTemp], uiBitsTemp, uiCostTemp);
@@ -3101,11 +3135,13 @@ Void TEncSearch::predInterSearch( TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv* 
         }
       }
     }
-
+    gettimeofday(&tv26, NULL); // iagostorch
+    unipredTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
     //  Bi-predictive Motion estimation
     if ( (pcCU->getSlice()->isInterB()) && (pcCU->isBipredRestriction(iPartIdx) == false) )
     {
-
+      gettimeofday(&tv25, NULL); // iagostorch
+        
       cMvBi[0] = cMv[0];            cMvBi[1] = cMv[1];
       iRefIdxBi[0] = iRefIdx[0];    iRefIdxBi[1] = iRefIdx[1];
 
@@ -3215,8 +3251,11 @@ Void TEncSearch::predInterSearch( TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv* 
           }
           uiBitsTemp += m_auiMVPIdxCost[aaiMvpIdxBi[iRefList][iRefIdxTemp]][AMVP_MAX_NUM_CANDS];
           // call ME
+          gettimeofday(&tv7, NULL); // iagostorch
           xMotionEstimation ( pcCU, pcOrgYuv, iPartIdx, eRefPicList, &cMvPredBi[iRefList][iRefIdxTemp], iRefIdxTemp, cMvTemp[iRefList][iRefIdxTemp], uiBitsTemp, uiCostTemp, true );
-
+          gettimeofday(&tv8, NULL); // iagostorch
+          xMotionEstimationTime += (double) (tv8.tv_usec - tv7.tv_usec)/1000000 + (double) (tv8.tv_sec - tv7.tv_sec); // iagostorch
+          
           xCopyAMVPInfo(&aacAMVPInfo[iRefList][iRefIdxTemp], pcCU->getCUMvField(eRefPicList)->getAMVPInfo());
           xCheckBestMVP(pcCU, eRefPicList, cMvTemp[iRefList][iRefIdxTemp], cMvPredBi[iRefList][iRefIdxTemp], aaiMvpIdxBi[iRefList][iRefIdxTemp], uiBitsTemp, uiCostTemp);
 
@@ -3258,6 +3297,8 @@ Void TEncSearch::predInterSearch( TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv* 
           break;
         }
       } // for loop-iter
+    gettimeofday(&tv26, NULL); // iagostorch
+    bipredTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
     } // if (B_SLICE)
 
 #if AMP_MRG
@@ -3407,10 +3448,11 @@ Void TEncSearch::predInterSearch( TComDataCU* pcCU, TComYuv* pcOrgYuv, TComYuv* 
         pcCU->getCUMvField( REF_PIC_LIST_1 )->setAllMvField( cMEMvField[1], ePartSize, uiPartAddr, 0, iPartIdx );
       }
     }
-
+    gettimeofday(&tv25, NULL); // iagostorch
     //  MC
     motionCompensation ( pcCU, pcPredYuv, REF_PIC_LIST_X, iPartIdx );
-
+    gettimeofday(&tv26, NULL); // iagostorch
+    motionCompTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
   } //  end of for ( Int iPartIdx = 0; iPartIdx < iNumPart; iPartIdx++ )
 
   setWpScalingDistParam( pcCU, -1, REF_PIC_LIST_X );
@@ -3736,12 +3778,16 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   if ( (m_motionEstimationSearchMethod==MESEARCH_FULL) || bBi )
   {
     // FULL SEARCH    iagostorch
+    gettimeofday(&tv13, NULL); // iagostorch
     xPatternSearch      ( pcPatternKey, piRefY, iRefStride, &cMvSrchRngLT, &cMvSrchRngRB, rcMv, ruiCost );
+    gettimeofday(&tv14, NULL); // iagostorch
+    xPatternSearchTime += (double) (tv14.tv_usec - tv13.tv_usec)/1000000 + (double) (tv14.tv_sec - tv13.tv_sec); // iagostorch
   }
   else
   {
     // FAST SEARCH iagostorch
     // iagostorch begin
+    gettimeofday(&tv9, NULL); // iagostorch
     pcCU->getPartPosition(iPartIdx, xPU, yPU, widthPU, heightPU);
     puSize = pcCU->getPartitionSize(iPartIdx); // Variable to save the PU TYPE, e.g., 2Nx2N, nLx2N (see enum PartSize)
     // iagostorch end
@@ -3756,16 +3802,21 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
     if (pcCU->getPartitionSize(0) == SIZE_2Nx2N)
     {
       m_integerMv2Nx2N[eRefPicList][iRefIdxPred] = rcMv;
-    }
+    }   
+    gettimeofday(&tv10, NULL); // iagostorch
+    xPatternSearchFastTime += (double) (tv10.tv_usec - tv9.tv_usec)/1000000 + (double) (tv10.tv_sec - tv9.tv_sec); // iagostorch
   }
 
   m_pcRdCost->selectMotionLambda( true, 0, pcCU->getCUTransquantBypass(uiPartAddr) );
   m_pcRdCost->setCostScale ( 1 );
-
+  gettimeofday(&tv25, NULL); // iagostorch
+  
   // Fractional motion estimation (FME) iagostorch
   const Bool bIsLosslessCoded = pcCU->getCUTransquantBypass(uiPartAddr) != 0;
   xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
-
+  gettimeofday(&tv26, NULL); // iagostorch
+  fmeTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
+  
   m_pcRdCost->setCostScale( 0 );
   rcMv <<= 2;
   rcMv += (cMvHalf <<= 1);
@@ -3889,7 +3940,10 @@ Void TEncSearch::xPatternSearchFast( const TComDataCU* const  pcCU,
   {
     // Types of Fast motion estimation from TZS/TZ Search/Test zone search iagostorch
     case MESEARCH_DIAMOND:  
+      gettimeofday(&tv11, NULL);  // iagostorch 
       xTZSearch( pcCU, pcPatternKey, piRefY, iRefStride, pcMvSrchRngLT, pcMvSrchRngRB, rcMv, ruiSAD, pIntegerMv2Nx2NPred, false );
+      gettimeofday(&tv12, NULL); // iagostorch
+      xTZSearchTime += (double) (tv12.tv_usec - tv11.tv_usec)/1000000 + (double) (tv12.tv_sec - tv11.tv_sec); // iagostorch
       break;
 
     case MESEARCH_SELECTIVE:
@@ -3955,6 +4009,9 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
 
   // iagostorch begin
   IntTZSearchStruct predMV, initMV, rastMV, refiMV; // Variables to keep the resulting MV for each step
+  
+  gettimeofday(&tv17, NULL);    // Time predict
+  
   // iagostorch end
   
   // set rcMv (Median predictor) as start point and as best point
@@ -4031,6 +4088,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
     iSrchRngVerBottom = cMvSrchRngRB.getVer();
   }
 
+  gettimeofday(&tv18, NULL); // iagostorch
+  predTime += (double) (tv18.tv_usec - tv17.tv_usec)/1000000 + (double) (tv18.tv_sec - tv17.tv_sec); // iagostorch
+  gettimeofday(&tv19, NULL); // iagostorch
+  
   // start search
   Int  iDist = 0;
   Int  iStartX = cStruct.iBestX;
@@ -4102,12 +4163,15 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
     cStruct.uiBestDistance = 0;
     xTZ2PointSearch( pcPatternKey, cStruct, pcMvSrchRngLT, pcMvSrchRngRB );
   }
+    
+  gettimeofday(&tv20, NULL); // iagostorch
+  firstTime += (double) (tv20.tv_usec - tv19.tv_usec)/1000000 + (double) (tv20.tv_sec - tv19.tv_sec); // iagostorch
 
   // iagostorch begin
   // Here we know the initial MV
   initMV = cStruct;
   // iagostorch end
-  
+      gettimeofday(&tv1, NULL);
   // raster search if distance is too big
   if (bUseAdaptiveRaster)
   {
@@ -4140,7 +4204,7 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
     {
       // iagostorch begin 
       // track if raster scan is done
-      didRaster = 1;
+      didRaster = 1;      
       // iagostorch end
       cStruct.uiBestDistance = iRaster;
       for ( iStartY = iSrchRngVerTop; iStartY <= iSrchRngVerBottom; iStartY += iRaster )
@@ -4151,13 +4215,18 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
 //          cout << "   RasterTest: " << iStartX << "x" << iStartY << "\tResult " << cStruct.iBestX << "x" << cStruct.iBestY <<  endl;
         }
       }
-//      cout << endl;
+//      cout << endl;    
     }
   }
+  
+  gettimeofday(&tv2, NULL);
+  rasterTime += (double) (tv2.tv_usec - tv1.tv_usec)/1000000 + (double) (tv2.tv_sec - tv1.tv_sec);
   // Here we know the resulting MV from raster scan
   rastMV = cStruct; 
   //iagostorch end
-  
+      
+  gettimeofday(&tv21, NULL); // iagostorch
+
   // raster refinement
 
   if ( bRasterRefinementEnable && cStruct.uiBestDistance > 0 )
@@ -4227,7 +4296,9 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
       }
     }
   }
-
+    
+  gettimeofday(&tv22, NULL); // iagostorch
+  refinTime += (double) (tv22.tv_usec - tv21.tv_usec)/1000000 + (double) (tv22.tv_sec - tv21.tv_sec); // iagostorch
   // write out best match
   rcMv.set( cStruct.iBestX, cStruct.iBestY );
   
