@@ -427,6 +427,24 @@ protected:
                                     TComMv&      rcMvQter,
                                     Distortion&  ruiCost
                                    );
+  
+  // iagostorch begin
+  
+  Void xPatternSearchFracDIF_onlyHalf(
+                                    Bool         bIsLosslessCoded,
+                                    TComPattern* pcPatternKey,
+                                    Pel*         piRefY,
+                                    Int          iRefStride,
+                                    TComMv*      pcMvInt,
+                                    TComMv&      rcMvHalf,
+                                    Distortion&  ruiCost
+                                      );
+  
+  Int getFmeSchedule(
+                    TComDataCU* const pcCU
+                    );
+  
+  // iagostorch end
 
   Void xExtDIFUpSamplingH( TComPattern* pcPattern );
   Void xExtDIFUpSamplingQ( TComPattern* pcPatternKey, TComMv halfPelRef );

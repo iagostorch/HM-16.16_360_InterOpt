@@ -3813,7 +3813,15 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   
   // Fractional motion estimation (FME) iagostorch
   const Bool bIsLosslessCoded = pcCU->getCUTransquantBypass(uiPartAddr) != 0;
-  xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
+  
+  int doFME = FULL_FME;
+  doFME = getFmeSchedule(pcCU);
+  
+  if(doFME == FULL_FME)
+    xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
+  else if(doFME == HALF_FME)
+    xPatternSearchFracDIF_onlyHalf( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, ruiCost );
+    
   gettimeofday(&tv26, NULL); // iagostorch
   fmeTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
   
@@ -4612,6 +4620,59 @@ Void TEncSearch::xPatternSearchFracDIF(
   ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );
 }
 
+// iagostorch begin
+
+Void TEncSearch::xPatternSearchFracDIF_onlyHalf(
+                                       Bool         bIsLosslessCoded,
+                                       TComPattern* pcPatternKey,
+                                       Pel*         piRefY,
+                                       Int          iRefStride,
+                                       TComMv*      pcMvInt,
+                                       TComMv&      rcMvHalf,
+                                       Distortion&  ruiCost
+                                      )
+{
+  //  Reference pattern initialization (integer scale)
+  TComPattern cPatternRoi;
+  Int         iOffset    = pcMvInt->getHor() + pcMvInt->getVer() * iRefStride;
+  cPatternRoi.initPattern(piRefY + iOffset,
+                          pcPatternKey->getROIYWidth(),
+                          pcPatternKey->getROIYHeight(),
+                          iRefStride,
+                          pcPatternKey->getBitDepthY());
+
+  //  Half-pel refinement
+  xExtDIFUpSamplingH ( &cPatternRoi );
+
+  rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+  TComMv baseRefMv(0, 0);
+  ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+
+  m_pcRdCost->setCostScale( 0 );
+
+  xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+}
+
+Int TEncSearch::getFmeSchedule(TComDataCU* pcCU){
+  Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*UPPER_BAND;
+  Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*LOWER_BAND;
+  int currY = pcCU->getCUPelY();
+  
+  if(currY <= upperBandThreshold){ // If current CU is in upper band
+//      cout << "Upper ";
+      return NO_FME;
+  }
+  else if(currY >= lowerBandThreshold){ // If current CU is in lower band
+//      cout << "Lower ";
+      return NO_FME;
+  }
+  else{
+      return  FULL_FME;
+  }
+  
+}
+
+// iagostorch end
 
 //! encode residual and calculate rate-distortion for a CU block
 Void TEncSearch::encodeResAndCalcRdInterCU( TComDataCU* pcCU, TComYuv* pcYuvOrg, TComYuv* pcYuvPred,
