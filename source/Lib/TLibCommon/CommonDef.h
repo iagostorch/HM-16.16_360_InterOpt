@@ -117,11 +117,15 @@ static const Float UPPER_BAND =     0.25;    // 25% upper region of frame is the
 static const Float LOWER_BAND =     0.75;    // 25% lower region of frame is the lower band
 
 // FME reduction constants
+//      Fracional constants
 static const Int NO_FME =            0;  
 static const Int FULL_FME =          1;
 static const Int HALF_FME =          2;
 static const Int QUARTER_FME =       3;
 
+//      Spatial constants
+static const Int VERTICAL_FME       = 2;
+static const Int HORIZONTAL_FME     = 3;
 // iagostorch end
 
 // ====================================================================================================================

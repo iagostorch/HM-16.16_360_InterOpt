@@ -45,10 +45,10 @@
 ofstream mvFile;
 ofstream finalCuInfo;
 ofstream intermediateCuInfo;
-Int extractOnlyRasterPUs = 1;
-Int extractTZInfo = 1;
-Int extractFinalCuInfo = 1;
-Int extractIntermediateCuInfo = 1;
+Int extractOnlyRasterPUs = 0;
+Int extractTZInfo = 0;
+Int extractFinalCuInfo = 0;
+Int extractIntermediateCuInfo = 0;
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;

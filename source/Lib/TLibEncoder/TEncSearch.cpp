@@ -98,6 +98,22 @@ static const TComMv s_acMvRefineH[9] =
   TComMv(  1,  1 )  // 8
 };
 
+// The following are positions of vertical and horizontal half pixels
+// They are used when employing FME only in one direction, either vertical or horizontal
+static const TComMv s_acMvRefineH_Vertical[3] =
+{
+    TComMv(  0,  0 ), // 0
+    TComMv(  0, -1 ), // 1
+    TComMv(  0,  1 ) // 2
+};
+
+static const TComMv s_acMvRefineH_Horizontal[3] =
+{
+    TComMv(  0,  0 ), // 0
+    TComMv( -1,  0 ), // 1
+    TComMv(  1,  0 ) // 2
+};
+
 static const TComMv s_acMvRefineQ[9] =
 {
   TComMv(  0,  0 ), // 0
@@ -111,6 +127,23 @@ static const TComMv s_acMvRefineQ[9] =
   TComMv(  1,  1 )  // 8
 };
 
+// iagostorch begin
+// The following are positions of vertical and horizontal quarter pixels
+// They are used when employing FME only in one direction, either vertical or horizontal
+static const TComMv s_acMvRefineQ_Vertical[3] =
+{
+  TComMv(  0,  0 ), // 0
+  TComMv(  0, -1 ), // 1
+  TComMv(  0,  1 ) // 2
+};
+
+static const TComMv s_acMvRefineQ_Horizontal[3] =
+{
+  TComMv(  0,  0 ), // 0
+  TComMv( -1,  0 ), // 1
+  TComMv(  1,  0 ) // 2
+};
+// iagostorch end
 static Void offsetSubTUCBFs(TComTU &rTu, const ComponentID compID)
 {
         TComDataCU *pcCU              = rTu.getCU();
@@ -913,7 +946,131 @@ Distortion TEncSearch::xPatternRefinement( TComPattern* pcPatternKey,
   return uiDistBest;
 }
 
+// iagostorch begin
 
+// This function is a modification of xPatternRefinement
+// This one performs the FME only in vertical fractional samples
+// The decision between half or quarter pel is based on iFrac
+Distortion TEncSearch::xPatternRefinement_Vertical( TComPattern* pcPatternKey,
+                                           TComMv baseRefMv,
+                                           Int iFrac, TComMv& rcMvFrac,
+                                           Bool bAllowUseOfHadamard
+                                         )
+{
+  Distortion  uiDist;
+  Distortion  uiDistBest  = std::numeric_limits<Distortion>::max();
+  UInt        uiDirecBest = 0;
+
+  Pel*  piRefPos;
+  Int iRefStride = m_filteredBlock[0][0].getStride(COMPONENT_Y);
+
+  m_pcRdCost->setDistParam( pcPatternKey, m_filteredBlock[0][0].getAddr(COMPONENT_Y), iRefStride, 1, m_cDistParam, m_pcEncCfg->getUseHADME() && bAllowUseOfHadamard );
+
+  // The next line considers s_acMvRefineH_Vertical instead of original s_acMvRefineH
+  // Therefore, performs only vertical FME
+  const TComMv* pcMvRefine = (iFrac == 2 ? s_acMvRefineH_Vertical : s_acMvRefineQ_Vertical);
+
+  for (UInt i = 0; i < 3; i++)
+  {
+    TComMv cMvTest = pcMvRefine[i];
+    cMvTest += baseRefMv;
+
+    Int horVal = cMvTest.getHor() * iFrac;
+    Int verVal = cMvTest.getVer() * iFrac;
+    piRefPos = m_filteredBlock[ verVal & 3 ][ horVal & 3 ].getAddr(COMPONENT_Y);
+    if ( horVal == 2 && ( verVal & 1 ) == 0 )
+    {
+      piRefPos += 1;
+    }
+    if ( ( horVal & 1 ) == 0 && verVal == 2 )
+    {
+      piRefPos += iRefStride;
+    }
+    cMvTest = pcMvRefine[i];
+    cMvTest += rcMvFrac;
+
+    setDistParamComp(COMPONENT_Y);
+
+    m_cDistParam.pCur = piRefPos;
+    m_cDistParam.bitDepth = pcPatternKey->getBitDepthY();
+    uiDist = m_cDistParam.DistFunc( &m_cDistParam );
+    uiDist += m_pcRdCost->getCostOfVectorWithPredictor( cMvTest.getHor(), cMvTest.getVer() );
+
+    if ( uiDist < uiDistBest )
+    {
+      uiDistBest  = uiDist;
+      uiDirecBest = i;
+      m_cDistParam.m_maximumDistortionForEarlyExit = uiDist;
+    }
+  }
+
+  rcMvFrac = pcMvRefine[uiDirecBest];
+
+  return uiDistBest;
+}
+
+// This function is a modification of xPatternRefinement
+// This one performs the FME only in horizontal fractional samples
+// The decision between half or quarter pel is based on iFrac
+Distortion TEncSearch::xPatternRefinement_Horizontal( TComPattern* pcPatternKey,
+                                           TComMv baseRefMv,
+                                           Int iFrac, TComMv& rcMvFrac,
+                                           Bool bAllowUseOfHadamard
+                                         )
+{
+  Distortion  uiDist;
+  Distortion  uiDistBest  = std::numeric_limits<Distortion>::max();
+  UInt        uiDirecBest = 0;
+
+  Pel*  piRefPos;
+  Int iRefStride = m_filteredBlock[0][0].getStride(COMPONENT_Y);
+
+  m_pcRdCost->setDistParam( pcPatternKey, m_filteredBlock[0][0].getAddr(COMPONENT_Y), iRefStride, 1, m_cDistParam, m_pcEncCfg->getUseHADME() && bAllowUseOfHadamard );
+  
+  // The next line considers s_acMvRefineH_Horizontal instead of original s_acMvRefineH
+  // Therefore, performs only horizontal FME
+  const TComMv* pcMvRefine = (iFrac == 2 ? s_acMvRefineH_Horizontal : s_acMvRefineQ_Horizontal);
+
+  for (UInt i = 0; i < 3; i++)
+  {
+    TComMv cMvTest = pcMvRefine[i];
+    cMvTest += baseRefMv;
+
+    Int horVal = cMvTest.getHor() * iFrac;
+    Int verVal = cMvTest.getVer() * iFrac;
+    piRefPos = m_filteredBlock[ verVal & 3 ][ horVal & 3 ].getAddr(COMPONENT_Y);
+    if ( horVal == 2 && ( verVal & 1 ) == 0 )
+    {
+      piRefPos += 1;
+    }
+    if ( ( horVal & 1 ) == 0 && verVal == 2 )
+    {
+      piRefPos += iRefStride;
+    }
+    cMvTest = pcMvRefine[i];
+    cMvTest += rcMvFrac;
+
+    setDistParamComp(COMPONENT_Y);
+
+    m_cDistParam.pCur = piRefPos;
+    m_cDistParam.bitDepth = pcPatternKey->getBitDepthY();
+    uiDist = m_cDistParam.DistFunc( &m_cDistParam );
+    uiDist += m_pcRdCost->getCostOfVectorWithPredictor( cMvTest.getHor(), cMvTest.getVer() );
+
+    if ( uiDist < uiDistBest )
+    {
+      uiDistBest  = uiDist;
+      uiDirecBest = i;
+      m_cDistParam.m_maximumDistortionForEarlyExit = uiDist;
+    }
+  }
+
+  rcMvFrac = pcMvRefine[uiDirecBest];
+
+  return uiDistBest;
+}
+
+// iagostorch end
 
 Void
 TEncSearch::xEncSubdivCbfQT(TComTU      &rTu,
@@ -3814,13 +3971,25 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   // Fractional motion estimation (FME) iagostorch
   const Bool bIsLosslessCoded = pcCU->getCUTransquantBypass(uiPartAddr) != 0;
   
-  int doFME = FULL_FME;
-  doFME = getFmeSchedule(pcCU);
+  int fractionalFME = FULL_FME;
+  // getFractionalFmeSchedule must be modified to change what regions should suffer inter, half and quarter pel motion estimation
+  fractionalFME = getFractionalFmeSchedule(pcCU);
   
-  if(doFME == FULL_FME)
+  int spatialFME = FULL_FME;
+  // getSpatialFmeSchedule must be modified to change what regions should perform FME in horizotal, vertical, or both
+  spatialFME = getSpatialFmeSchedule(pcCU);
+  
+  if(fractionalFME == VERTICAL_FME)
+  
+  //if((fractionalFME == FULL_FME) && (spatialFME == FULL_FME))
+  // xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
+  //else if(spatialFME == VERTICAL_FME)
+  if(spatialFME == HORIZONTAL_FME)
+    xPatternSearchFracDIF_onlyHorizontal( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
+  else
     xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
-  else if(doFME == HALF_FME)
-    xPatternSearchFracDIF_onlyHalf( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, ruiCost );
+  //else if(fractionalFME == HALF_FME)
+  //  xPatternSearchFracDIF_onlyHalf( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, ruiCost );
     
   gettimeofday(&tv26, NULL); // iagostorch
   fmeTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
@@ -4653,23 +4822,123 @@ Void TEncSearch::xPatternSearchFracDIF_onlyHalf(
   xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
 }
 
-Int TEncSearch::getFmeSchedule(TComDataCU* pcCU){
+// iagostorch begin
+
+// This method is used to perform FME only in vertical direction
+// It performs both half and quarter pel precision
+Void TEncSearch::xPatternSearchFracDIF_onlyVertical(
+                                       Bool         bIsLosslessCoded,
+                                       TComPattern* pcPatternKey,
+                                       Pel*         piRefY,
+                                       Int          iRefStride,
+                                       TComMv*      pcMvInt,
+                                       TComMv&      rcMvHalf,
+                                       TComMv&      rcMvQter,
+                                       Distortion&  ruiCost
+                                      )
+{
+  //  Reference pattern initialization (integer scale)
+  TComPattern cPatternRoi;
+  Int         iOffset    = pcMvInt->getHor() + pcMvInt->getVer() * iRefStride;
+  cPatternRoi.initPattern(piRefY + iOffset,
+                          pcPatternKey->getROIYWidth(),
+                          pcPatternKey->getROIYHeight(),
+                          iRefStride,
+                          pcPatternKey->getBitDepthY());
+
+  //  Half-pel refinement
+  xExtDIFUpSamplingH ( &cPatternRoi );
+
+  rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+  TComMv baseRefMv(0, 0);
+  ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+
+  m_pcRdCost->setCostScale( 0 );
+
+  xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+  baseRefMv = rcMvHalf;
+  baseRefMv <<= 1;
+
+  rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+  rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+  ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );
+}
+
+// This method is used to perform FME only in horizontal direction
+// It performs both half and quarter pel precision
+Void TEncSearch::xPatternSearchFracDIF_onlyHorizontal(
+                                       Bool         bIsLosslessCoded,
+                                       TComPattern* pcPatternKey,
+                                       Pel*         piRefY,
+                                       Int          iRefStride,
+                                       TComMv*      pcMvInt,
+                                       TComMv&      rcMvHalf,
+                                       TComMv&      rcMvQter,
+                                       Distortion&  ruiCost
+                                      )
+{
+  //  Reference pattern initialization (integer scale)
+  TComPattern cPatternRoi;
+  Int         iOffset    = pcMvInt->getHor() + pcMvInt->getVer() * iRefStride;
+  cPatternRoi.initPattern(piRefY + iOffset,
+                          pcPatternKey->getROIYWidth(),
+                          pcPatternKey->getROIYHeight(),
+                          iRefStride,
+                          pcPatternKey->getBitDepthY());
+
+  //  Half-pel refinement
+  xExtDIFUpSamplingH ( &cPatternRoi );
+
+  rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+  TComMv baseRefMv(0, 0);
+  ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+
+  m_pcRdCost->setCostScale( 0 );
+
+  xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+  baseRefMv = rcMvHalf;
+  baseRefMv <<= 1;
+
+  rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+  rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+  ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );
+}
+
+// Based on the pcCU data, it determines if current CU must be predicted 
+// Using integer, half or quarter pel precision
+Int TEncSearch::getFractionalFmeSchedule(TComDataCU* pcCU){
   Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*UPPER_BAND;
   Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*LOWER_BAND;
   int currY = pcCU->getCUPelY();
   
   if(currY <= upperBandThreshold){ // If current CU is in upper band
-//      cout << "Upper ";
       return NO_FME;
   }
   else if(currY >= lowerBandThreshold){ // If current CU is in lower band
-//      cout << "Lower ";
       return NO_FME;
   }
   else{
       return  FULL_FME;
   }
   
+}
+
+// Based on the pcCU data, it determines if curent CU must be predicted
+// Using FME only in vertical or horizontal direction, or both
+Int TEncSearch::getSpatialFmeSchedule(TComDataCU* pcCU){
+  Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*UPPER_BAND;
+  Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*LOWER_BAND;
+  int currY = pcCU->getCUPelY();
+  
+    if(currY <= upperBandThreshold){ // If current CU is in upper band
+      return HORIZONTAL_FME;
+  }
+  else if(currY >= lowerBandThreshold){ // If current CU is in lower band
+      return HORIZONTAL_FME;
+  }
+  else{
+      return  FULL_FME;
+  }
 }
 
 // iagostorch end
@@ -5737,7 +6006,10 @@ Void  TEncSearch::xAddSymbolBitsInter( TComDataCU* pcCU, UInt& ruiBits )
 Void TEncSearch::xExtDIFUpSamplingH( TComPattern* pattern )
 {
   Int width      = pattern->getROIYWidth();
+//  cout << "FME Width  " << width  << endl;
   Int height     = pattern->getROIYHeight();
+//  cout << "FME Height " << height << endl;
+//  cout << endl;
   Int srcStride  = pattern->getPatternLStride();
 
   Int intStride = m_filteredBlockTmp[0].getStride(COMPONENT_Y);

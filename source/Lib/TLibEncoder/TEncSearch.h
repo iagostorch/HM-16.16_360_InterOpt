@@ -144,7 +144,18 @@ protected:
                                   TComMv baseRefMv,
                                   Int iFrac, TComMv& rcMvFrac, Bool bAllowUseOfHadamard
                                  );
+// iagostorch begin
+  
+  Distortion  xPatternRefinement_Vertical( TComPattern* pcPatternKey,
+                                  TComMv baseRefMv,
+                                  Int iFrac, TComMv& rcMvFrac, Bool bAllowUseOfHadamard
+                                 );
 
+  Distortion  xPatternRefinement_Horizontal( TComPattern* pcPatternKey,
+                                  TComMv baseRefMv,
+                                  Int iFrac, TComMv& rcMvFrac, Bool bAllowUseOfHadamard
+                                 );
+  // iagostorch end
   typedef struct
   {
     const Pel*  piRefY;
@@ -439,10 +450,36 @@ protected:
                                     TComMv&      rcMvHalf,
                                     Distortion&  ruiCost
                                       );
+  Void xPatternSearchFracDIF_onlyVertical(
+                                    Bool         bIsLosslessCoded,
+                                    TComPattern* pcPatternKey,
+                                    Pel*         piRefY,
+                                    Int          iRefStride,
+                                    TComMv*      pcMvInt,
+                                    TComMv&      rcMvHalf,
+                                    TComMv&      rcMvQter,
+                                    Distortion&  ruiCost
+                                   ); 
   
-  Int getFmeSchedule(
+    Void xPatternSearchFracDIF_onlyHorizontal(
+                                    Bool         bIsLosslessCoded,
+                                    TComPattern* pcPatternKey,
+                                    Pel*         piRefY,
+                                    Int          iRefStride,
+                                    TComMv*      pcMvInt,
+                                    TComMv&      rcMvHalf,
+                                    TComMv&      rcMvQter,
+                                    Distortion&  ruiCost
+                                   ); 
+  
+  Int getFractionalFmeSchedule(
                     TComDataCU* const pcCU
                     );
+  
+  Int getSpatialFmeSchedule(
+                    TComDataCU* pcCU
+                    );
+
   
   // iagostorch end
 
