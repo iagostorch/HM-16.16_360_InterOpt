@@ -88,11 +88,11 @@ int main(int argc, char* argv[])
   }
   if(extractFinalCuInfo){
     finalCuInfo.open("finalPU.csv");
-    finalCuInfo << "CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+    finalCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
   }
   if(extractIntermediateCuInfo){
     intermediateCuInfo.open("intermediatePU.csv");
-    intermediateCuInfo << "CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+    intermediateCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
   }
   // iagostorch end
   TAppEncTop  cTAppEncTop;
