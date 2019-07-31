@@ -68,6 +68,8 @@ double unipredTime = 0.0;
 double bipredTime = 0.0;
 double motionCompTime = 0.0;
 double fmeTime = 0.0;
+double halfGenTime = 0.0;
+double quartGenTime = 0.0;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -161,6 +163,8 @@ int main(int argc, char* argv[])
   cout << "|||||refinTime: " << refinTime << endl; 
   cout << "|||xPatternSearchTime:  " << xPatternSearchTime << endl;
   cout << "|||FME:  " << fmeTime << endl;
+  cout << "||||halfGenTime:  " << halfGenTime << endl;
+  cout << "||||quartGenTime:  " << quartGenTime << endl;
   cout << "|calcRdInter: " << calcRdInter << endl; 
   cout << "|checkBestModeInter: " << checkBestModeInter << endl; 
   

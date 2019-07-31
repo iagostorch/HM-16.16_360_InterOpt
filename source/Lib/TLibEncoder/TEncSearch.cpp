@@ -59,6 +59,8 @@ struct timeval  tv17, tv18; // TZ Pred
 struct timeval  tv19, tv20; // TZ First
 struct timeval  tv21, tv22; // TZ Refin
 struct timeval tv25, tv26;
+struct timeval tv27, tv28; // half samples generation inside fme
+struct timeval tv29, tv30; // quart samples generation inside fme
 extern double rasterTime;
 extern double xMotionEstimationTime;
 extern double xPatternSearchFastTime;
@@ -71,6 +73,8 @@ extern double unipredTime;
 extern double bipredTime;
 extern double motionCompTime;
 extern double fmeTime;
+extern double halfGenTime;
+extern double quartGenTime;
 
 int didRaster = 0;  // Variable to track if the TZS performed the raster scan for the current PU
 Int xPU, yPU, widthPU, heightPU;  // Variables to save the PU position and size
@@ -3971,25 +3975,14 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   // Fractional motion estimation (FME) iagostorch
   const Bool bIsLosslessCoded = pcCU->getCUTransquantBypass(uiPartAddr) != 0;
   
-  int fractionalFME = FULL_FME;
-  // getFractionalFmeSchedule must be modified to change what regions should suffer inter, half and quarter pel motion estimation
-  fractionalFME = getFractionalFmeSchedule(pcCU);
   
-  int spatialFME = FULL_FME;
-  // getSpatialFmeSchedule must be modified to change what regions should perform FME in horizotal, vertical, or both
-  spatialFME = getSpatialFmeSchedule(pcCU);
+  int parametersFME[DIRECTIONS_FME] = {QUARTER_PEL, QUARTER_PEL};
+  getFmeSchedule(pcCU, parametersFME);
+//  cout << "CU " << pcCU->getCUPelX() << "x" << pcCU->getCUPelY() << "\tVert " << parametersFME[VERTICAL_FME] << " Hori " << parametersFME[HORIZONTAL_FME] << endl;
   
-  if(fractionalFME == VERTICAL_FME)
+  xPatternSearchFracDIF_adaptive( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost, parametersFME );
+//  xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
   
-  //if((fractionalFME == FULL_FME) && (spatialFME == FULL_FME))
-  // xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
-  //else if(spatialFME == VERTICAL_FME)
-  if(spatialFME == HORIZONTAL_FME)
-    xPatternSearchFracDIF_onlyHorizontal( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
-  else
-    xPatternSearchFracDIF( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost );
-  //else if(fractionalFME == HALF_FME)
-  //  xPatternSearchFracDIF_onlyHalf( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, ruiCost );
     
   gettimeofday(&tv26, NULL); // iagostorch
   fmeTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
@@ -4791,42 +4784,11 @@ Void TEncSearch::xPatternSearchFracDIF(
 
 // iagostorch begin
 
-Void TEncSearch::xPatternSearchFracDIF_onlyHalf(
-                                       Bool         bIsLosslessCoded,
-                                       TComPattern* pcPatternKey,
-                                       Pel*         piRefY,
-                                       Int          iRefStride,
-                                       TComMv*      pcMvInt,
-                                       TComMv&      rcMvHalf,
-                                       Distortion&  ruiCost
-                                      )
-{
-  //  Reference pattern initialization (integer scale)
-  TComPattern cPatternRoi;
-  Int         iOffset    = pcMvInt->getHor() + pcMvInt->getVer() * iRefStride;
-  cPatternRoi.initPattern(piRefY + iOffset,
-                          pcPatternKey->getROIYWidth(),
-                          pcPatternKey->getROIYHeight(),
-                          iRefStride,
-                          pcPatternKey->getBitDepthY());
-
-  //  Half-pel refinement
-  xExtDIFUpSamplingH ( &cPatternRoi );
-
-  rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
-  TComMv baseRefMv(0, 0);
-  ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
-
-  m_pcRdCost->setCostScale( 0 );
-
-  xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
-}
-
-// iagostorch begin
-
-// This method is used to perform FME only in vertical direction
-// It performs both half and quarter pel precision
-Void TEncSearch::xPatternSearchFracDIF_onlyVertical(
+// This method performs FME according to parametersFME variable
+// There are 9 FME options, varying the precision of FME in each direction
+// E.g.: vertical half-pel and horizontal quarter-pel
+// E.g.: vertical quarter-pel and horizontal integer (no horizontal FME)
+Void TEncSearch::xPatternSearchFracDIF_adaptive(
                                        Bool         bIsLosslessCoded,
                                        TComPattern* pcPatternKey,
                                        Pel*         piRefY,
@@ -4834,7 +4796,8 @@ Void TEncSearch::xPatternSearchFracDIF_onlyVertical(
                                        TComMv*      pcMvInt,
                                        TComMv&      rcMvHalf,
                                        TComMv&      rcMvQter,
-                                       Distortion&  ruiCost
+                                       Distortion&  ruiCost,
+                                       Int*         parametersFME
                                       )
 {
   //  Reference pattern initialization (integer scale)
@@ -4846,98 +4809,200 @@ Void TEncSearch::xPatternSearchFracDIF_onlyVertical(
                           iRefStride,
                           pcPatternKey->getBitDepthY());
 
-  //  Half-pel refinement
-  xExtDIFUpSamplingH ( &cPatternRoi );
+  if((parametersFME[HORIZONTAL_FME] == INTEGER_PEL) and (parametersFME[VERTICAL_FME] == INTEGER_PEL)){
+//      cout << "INT FME" << endl;
+      return;
+  }
+  else if((parametersFME[HORIZONTAL_FME] == INTEGER_PEL) and (parametersFME[VERTICAL_FME] == HALF_PEL)){
+//      cout << "HORI INT\tVERT HALF" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+      
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      m_pcRdCost->setCostScale( 0 );     
+  }
+  else if((parametersFME[HORIZONTAL_FME] == INTEGER_PEL) and (parametersFME[VERTICAL_FME] == QUARTER_PEL)){
+//      cout << "HORI INT\tVERT QUART" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+      
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      m_pcRdCost->setCostScale( 0 ); 
+      
+      gettimeofday(&tv29, NULL); // iagostorch
+      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      gettimeofday(&tv30, NULL); // iagostorch
+      quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
 
-  rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
-  TComMv baseRefMv(0, 0);
-  ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      baseRefMv = rcMvHalf;
+      baseRefMv <<= 1;
 
-  m_pcRdCost->setCostScale( 0 );
+      rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+      rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+      ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );      
+  }
+  else if((parametersFME[HORIZONTAL_FME] == HALF_PEL) and (parametersFME[VERTICAL_FME] == INTEGER_PEL)){
+//      cout << "HORI HALF\tVERT INT" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+      
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      m_pcRdCost->setCostScale( 0 );       
+  }
+  else if((parametersFME[HORIZONTAL_FME] == HALF_PEL) and (parametersFME[VERTICAL_FME] == HALF_PEL)){
+//      cout << "HORI HALF\tVERT HALF" << endl;
 
-  xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
-  baseRefMv = rcMvHalf;
-  baseRefMv <<= 1;
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+      
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      m_pcRdCost->setCostScale( 0 );          
+  }
+  else if((parametersFME[HORIZONTAL_FME] == HALF_PEL) and (parametersFME[VERTICAL_FME] == QUARTER_PEL)){
+//      cout << "HORI HALF\tVERT QUART" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+      
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      m_pcRdCost->setCostScale( 0 ); 
+      
+      gettimeofday(&tv29, NULL); // iagostorch
+      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      gettimeofday(&tv30, NULL); // iagostorch
+      quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
+      
+      baseRefMv = rcMvHalf;
+      baseRefMv <<= 1;
 
-  rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
-  rcMvQter += rcMvHalf;  rcMvQter <<= 1;
-  ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );
+      rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+      rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+      ruiCost = xPatternRefinement_Vertical( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );      
+  }
+  else if((parametersFME[HORIZONTAL_FME] == QUARTER_PEL) and (parametersFME[VERTICAL_FME] == INTEGER_PEL)){
+//      cout << "HORI QUART\tVERT INT" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      
+      m_pcRdCost->setCostScale( 0 );
+  
+      gettimeofday(&tv29, NULL); // iagostorch
+      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      gettimeofday(&tv30, NULL); // iagostorch
+      quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
+      
+      baseRefMv = rcMvHalf;
+      baseRefMv <<= 1;
+
+      rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+      rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+      ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );      
+      
+  }
+  else if((parametersFME[HORIZONTAL_FME] == QUARTER_PEL) and (parametersFME[VERTICAL_FME] == HALF_PEL)){
+//      cout << "HORI QUART\tVERT HALF" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      
+      m_pcRdCost->setCostScale( 0 );
+  
+      gettimeofday(&tv29, NULL); // iagostorch
+      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      gettimeofday(&tv30, NULL); // iagostorch
+      quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
+      
+      baseRefMv = rcMvHalf;
+      baseRefMv <<= 1;
+
+      rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+      rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+      ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );      
+           
+  }
+  else if((parametersFME[HORIZONTAL_FME] == QUARTER_PEL) and (parametersFME[VERTICAL_FME] == QUARTER_PEL)){
+//      cout << "HORI QUART\tVERT QUART" << endl;
+      
+      gettimeofday(&tv27, NULL); // iagostorch
+      xExtDIFUpSamplingH ( &cPatternRoi );
+      gettimeofday(&tv28, NULL); // iagostorch
+      halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
+
+      rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
+      TComMv baseRefMv(0, 0);
+      ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
+      
+      m_pcRdCost->setCostScale( 0 );
+  
+      gettimeofday(&tv29, NULL); // iagostorch
+      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      gettimeofday(&tv30, NULL); // iagostorch
+      quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
+      
+      baseRefMv = rcMvHalf;
+      baseRefMv <<= 1;
+
+      rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
+      rcMvQter += rcMvHalf;  rcMvQter <<= 1;
+      ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );            
+  }
 }
 
-// This method is used to perform FME only in horizontal direction
-// It performs both half and quarter pel precision
-Void TEncSearch::xPatternSearchFracDIF_onlyHorizontal(
-                                       Bool         bIsLosslessCoded,
-                                       TComPattern* pcPatternKey,
-                                       Pel*         piRefY,
-                                       Int          iRefStride,
-                                       TComMv*      pcMvInt,
-                                       TComMv&      rcMvHalf,
-                                       TComMv&      rcMvQter,
-                                       Distortion&  ruiCost
-                                      )
-{
-  //  Reference pattern initialization (integer scale)
-  TComPattern cPatternRoi;
-  Int         iOffset    = pcMvInt->getHor() + pcMvInt->getVer() * iRefStride;
-  cPatternRoi.initPattern(piRefY + iOffset,
-                          pcPatternKey->getROIYWidth(),
-                          pcPatternKey->getROIYHeight(),
-                          iRefStride,
-                          pcPatternKey->getBitDepthY());
-
-  //  Half-pel refinement
-  xExtDIFUpSamplingH ( &cPatternRoi );
-
-  rcMvHalf = *pcMvInt;   rcMvHalf <<= 1;    // for mv-cost
-  TComMv baseRefMv(0, 0);
-  ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
-
-  m_pcRdCost->setCostScale( 0 );
-
-  xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
-  baseRefMv = rcMvHalf;
-  baseRefMv <<= 1;
-
-  rcMvQter = *pcMvInt;   rcMvQter <<= 1;    // for mv-cost
-  rcMvQter += rcMvHalf;  rcMvQter <<= 1;
-  ruiCost = xPatternRefinement_Horizontal( pcPatternKey, baseRefMv, 1, rcMvQter, !bIsLosslessCoded );
-}
-
-// Based on the pcCU data, it determines if current CU must be predicted 
-// Using integer, half or quarter pel precision
-Int TEncSearch::getFractionalFmeSchedule(TComDataCU* pcCU){
+// Based on pcCU data, it determines the FME resolution for
+// vertical and horizontal searches
+void TEncSearch::getFmeSchedule(TComDataCU* pcCU, Int* fmeSchedule){
   Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*UPPER_BAND;
   Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*LOWER_BAND;
+  
   int currY = pcCU->getCUPelY();
   
   if(currY <= upperBandThreshold){ // If current CU is in upper band
-      return NO_FME;
+      fmeSchedule[VERTICAL_FME] = QUARTER_PEL;
+      fmeSchedule[HORIZONTAL_FME] = QUARTER_PEL;
   }
   else if(currY >= lowerBandThreshold){ // If current CU is in lower band
-      return NO_FME;
+       fmeSchedule[VERTICAL_FME] = QUARTER_PEL;
+       fmeSchedule[HORIZONTAL_FME] = QUARTER_PEL;
   }
   else{
-      return  FULL_FME;
-  }
-  
-}
-
-// Based on the pcCU data, it determines if curent CU must be predicted
-// Using FME only in vertical or horizontal direction, or both
-Int TEncSearch::getSpatialFmeSchedule(TComDataCU* pcCU){
-  Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*UPPER_BAND;
-  Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*LOWER_BAND;
-  int currY = pcCU->getCUPelY();
-  
-    if(currY <= upperBandThreshold){ // If current CU is in upper band
-      return HORIZONTAL_FME;
-  }
-  else if(currY >= lowerBandThreshold){ // If current CU is in lower band
-      return HORIZONTAL_FME;
-  }
-  else{
-      return  FULL_FME;
+       fmeSchedule[VERTICAL_FME] = QUARTER_PEL;
+       fmeSchedule[HORIZONTAL_FME] = QUARTER_PEL;      
   }
 }
 
@@ -6023,20 +6088,24 @@ Void TEncSearch::xExtDIFUpSamplingH( TComPattern* pattern )
   const ChromaFormat chFmt = m_filteredBlock[0][0].getChromaFormat();
 
   m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, m_filteredBlockTmp[0].getAddr(COMPONENT_Y), intStride, width+1, height+filterSize, 0, false, chFmt, pattern->getBitDepthY());
+  // Next line generates half position to right. Useless for vertical FME
   m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, m_filteredBlockTmp[2].getAddr(COMPONENT_Y), intStride, width+1, height+filterSize, 2, false, chFmt, pattern->getBitDepthY());
 
   intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + halfFilterSize * intStride + 1;
   dstPtr = m_filteredBlock[0][0].getAddr(COMPONENT_Y);
   m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+0, height+0, 0, false, true, chFmt, pattern->getBitDepthY());
 
+  //   Next line generates half position to bottom. Useless for horizontal  FME
   intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride + 1;
   dstPtr = m_filteredBlock[2][0].getAddr(COMPONENT_Y);
   m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+0, height+1, 2, false, true, chFmt, pattern->getBitDepthY());
 
+//   Next line generates half position to right. Useless for vertical FME
   intPtr = m_filteredBlockTmp[2].getAddr(COMPONENT_Y) + halfFilterSize * intStride;
   dstPtr = m_filteredBlock[0][2].getAddr(COMPONENT_Y);
   m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+1, height+0, 0, false, true, chFmt, pattern->getBitDepthY());
-
+  
+//   Next line generates half position to bottom-right. Useless for vertical FME and horizontal FME
   intPtr = m_filteredBlockTmp[2].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride;
   dstPtr = m_filteredBlock[2][2].getAddr(COMPONENT_Y);
   m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+1, height+1, 2, false, true, chFmt, pattern->getBitDepthY());
