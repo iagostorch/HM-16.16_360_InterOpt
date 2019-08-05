@@ -60,7 +60,9 @@ extern double checkIntraTime;
 extern double calcRdInter;
 extern double checkBestModeInter;
 
-void writeIntermediateCU(TComDataCU *CU);//{
+// Header of iagostorch functions
+void writeIntermediateCU(TComDataCU *CU);
+int   shouldForceSkip     (TComDataCU* currCU); // This function defines if currentCU should be forced to skip. Remaining encoding modes are ignored
 
 extern Int extractIntermediateCuInfo;
 extern ofstream intermediateCuInfo;
@@ -533,6 +535,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
 
   const Bool bBoundary = !( uiRPelX < sps.getPicWidthInLumaSamples() && uiBPelY < sps.getPicHeightInLumaSamples() );
 
+// iagostorch begin
+  int forceSkip = 0;    // forceSkip is used to force a CU to be encoded with skip. Evaluation of remaining modes are skipped
+  forceSkip = shouldForceSkip(rpcBestCU);
+  // iagostorch end
   if ( !bBoundary )
   {
     for (Int iQP=iMinQP; iQP<=iMaxQP; iQP++)
@@ -577,10 +583,12 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );//by Competition for inter_2Nx2N
         }
         // SKIP
-        xCheckRDCostMerge2Nx2N( rpcBestCU, rpcTempCU DEBUG_STRING_PASS_INTO(sDebug), &earlyDetectionSkipMode );//by Merge for inter_2Nx2N
+        // iagostorch added forceSKip parameter to following function
+        xCheckRDCostMerge2Nx2N( rpcBestCU, rpcTempCU DEBUG_STRING_PASS_INTO(sDebug), &earlyDetectionSkipMode, forceSkip );//by Merge for inter_2Nx2N
         rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
-
-        if(!m_pcEncCfg->getUseEarlySkipDetection())
+        
+        // iagostorch added !forceSkip to following conditional. When forceSkip is true, ME is not performed for current PU
+        if(!m_pcEncCfg->getUseEarlySkipDetection() and !forceSkip)
         {
           // 2Nx2N, NxN
           gettimeofday(&tv3, NULL);   // iagostorch
@@ -600,7 +608,18 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         iQP = iMinQP;
       }
     }
-
+    
+    // iagostorch begin
+    // When forceSkip is true, different PU partitions in the same CU are ignored
+    // Also, motion estimation and intra prediction are skipped
+    if(forceSkip == 1){
+        earlyDetectionSkipMode = 1;
+    }
+    else{
+        earlyDetectionSkipMode = 0;
+    }
+    // iagostorch end
+    
     if(!earlyDetectionSkipMode)
     {
       for (Int iQP=iMinQP; iQP<=iMaxQP; iQP++)
@@ -840,7 +859,6 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         }
       }
     }
-
     if( rpcBestCU->getTotalCost()!=MAX_DOUBLE )
     {
       m_pcRDGoOnSbacCoder->load(m_pppcRDSbacCoder[uiDepth][CI_NEXT_BEST]);
@@ -1353,7 +1371,8 @@ Int  TEncCu::updateCtuDataISlice(TComDataCU* pCtu, Int width, Int height)
  * \param rpcTempCU
  * \param earlyDetectionSkipMode
  */
-Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU DEBUG_STRING_FN_DECLARE(sDebug), Bool *earlyDetectionSkipMode )
+// iagostorch added forceSkip parameter to this function
+Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU DEBUG_STRING_FN_DECLARE(sDebug), Bool *earlyDetectionSkipMode, int forceSkip )
 {
   assert( rpcTempCU->getSlice()->getSliceType() != I_SLICE );
   if(getFastDeltaQp())
@@ -1390,9 +1409,18 @@ Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTem
   {
     iteration = 2;
   }
+  
+  // iagostorch begin
+  int c = 0;
+  if (forceSkip)
+      c = 1;    // In next for loop, if c=1, then it only tests for skip mode
+  else
+      c = 0;
+  // iagostorch end
   DEBUG_STRING_NEW(bestStr)
 
-  for( UInt uiNoResidual = 0; uiNoResidual < iteration; ++uiNoResidual )
+  // iagostorch changed "uiNoResidual = 0" to "uiNoResidual = c" to enable evaluating only skip mode in some cases
+  for( UInt uiNoResidual = c; uiNoResidual < iteration; ++uiNoResidual )
   {
     for( UInt uiMergeCand = 0; uiMergeCand < numValidMergeCand; ++uiMergeCand )
     {
@@ -1411,7 +1439,7 @@ Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTem
           rpcTempCU->setInterDirSubParts( uhInterDirNeighbours[uiMergeCand], 0, 0, uhDepth ); // interprets depth relative to CTU level
           rpcTempCU->getCUMvField( REF_PIC_LIST_0 )->setAllMvField( cMvFieldNeighbours[0 + 2*uiMergeCand], SIZE_2Nx2N, 0, 0 ); // interprets depth relative to rpcTempCU level
           rpcTempCU->getCUMvField( REF_PIC_LIST_1 )->setAllMvField( cMvFieldNeighbours[1 + 2*uiMergeCand], SIZE_2Nx2N, 0, 0 ); // interprets depth relative to rpcTempCU level
-
+          
           // do MC
           m_pcPredSearch->motionCompensation ( rpcTempCU, m_ppcPredYuvTemp[uhDepth] );
           // estimate residual and encode everything
@@ -1446,7 +1474,7 @@ Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTem
         }
       }
     }
-
+    
     if(uiNoResidual == 0 && m_pcEncCfg->getUseEarlySkipDetection())
     {
       if(rpcBestCU->getQtRootCbf( 0 ) == 0)
@@ -1865,6 +1893,16 @@ Void TEncCu::xCtuCollectARLStats(TComDataCU* pCtu )
 //! \}
 
 // iagostorch begin
+
+int shouldForceSkip(TComDataCU* currCU){
+    // This if is a condition to force current CU to be encoded with skip mode
+    if(currCU->getPic()->getPOC() != 0){
+        return 0;
+    }
+    
+    return 0;
+}
+
 
 void writeIntermediateCU(TComDataCU *CU){
     int i=0, lenght=0, totalSize;
