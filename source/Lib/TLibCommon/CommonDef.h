@@ -124,13 +124,13 @@ static const float LOWER_BAND = 0.75;
 static const float CUTOFF_VAR_64 = 360.0;
 static const float CUTOFF_VAR_32 = 230.0;
 static const float CUTOFF_VAR_16 = 116.0;
-static const float CUTOFF_VAR_8 = 50.0;
+static const float CUTOFF_VAR_8 = 40.0;
 
 //// 85% of skips occur in CUs with variance lower than these tresholds
 //static const float CUTOFF_VAR_64 = 460.0;
 //static const float CUTOFF_VAR_32 = 320.0;
 //static const float CUTOFF_VAR_16 = 192.0;
-//static const float CUTOFF_VAR_8 = 44.0;
+//static const float CUTOFF_VAR_8 = 84.0;
 //
 //// 90% of skips occur in CUs with variance lower than these tresholds
 //static const float CUTOFF_VAR_64 = 640.0;
