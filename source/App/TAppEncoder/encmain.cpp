@@ -49,6 +49,7 @@ Int extractOnlyRasterPUs = 1;
 Int extractTZInfo = 1;
 Int extractFinalCuInfo = 1;
 Int extractIntermediateCuInfo = 1;
+Int** samplesMatrix; // Used to store the samples value for future variancecalculation
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
@@ -68,6 +69,7 @@ double unipredTime = 0.0;
 double bipredTime = 0.0;
 double motionCompTime = 0.0;
 double fmeTime = 0.0;
+double varTime = 0.0;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -150,6 +152,7 @@ int main(int argc, char* argv[])
   cout << endl;
   cout << "checkIntraTime:  " << checkIntraTime << endl;
   cout << "checkInterTime:  " << checkInterTime << endl;
+  cout << "calcVarTime: " << varTime << endl; 
   
   cout << "|predInterSearchTime:  " << predInterSearchTime << endl;
   cout << "||xMotionEstimationTime:  " << xMotionEstimationTime << endl;

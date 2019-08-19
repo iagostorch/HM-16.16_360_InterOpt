@@ -107,6 +107,39 @@ inline Int64 abs (Int64 x) { return _abs64(x); };
 #define NULL              0
 #endif
 
+// iagostorch begin
+// ====================================================================================================================
+// iagostorch constants
+// ====================================================================================================================
+static const float UPPER_BAND = 0.25;
+static const float LOWER_BAND = 0.75;
+
+// 75% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 280.0;
+//static const float CUTOFF_VAR_32 = 160.0;
+//static const float CUTOFF_VAR_16 = 68.0;
+//static const float CUTOFF_VAR_8 = 26.0;
+
+// 80% of skips occur in CUs with variance lower than these tresholds
+static const float CUTOFF_VAR_64 = 360.0;
+static const float CUTOFF_VAR_32 = 230.0;
+static const float CUTOFF_VAR_16 = 116.0;
+static const float CUTOFF_VAR_8 = 50.0;
+
+//// 85% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 460.0;
+//static const float CUTOFF_VAR_32 = 320.0;
+//static const float CUTOFF_VAR_16 = 192.0;
+//static const float CUTOFF_VAR_8 = 44.0;
+//
+//// 90% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 640.0;
+//static const float CUTOFF_VAR_32 = 480.0;
+//static const float CUTOFF_VAR_16 = 332.0;
+//static const float CUTOFF_VAR_8 = 176.0;
+
+// iagostorch end
+
 // ====================================================================================================================
 // Common constants
 // ====================================================================================================================

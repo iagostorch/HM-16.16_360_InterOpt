@@ -54,18 +54,22 @@ struct timeval  tv3, tv4;
 struct timeval  tv5, tv6;
 struct timeval  tv15, tv16;
 struct timeval  tv23, tv24;
+struct timeval  var1, var2;
 extern double checkInterTime;
 extern double predInterSearchTime;
 extern double checkIntraTime;
 extern double calcRdInter;
 extern double checkBestModeInter;
+extern double varTime;
 
 // Header of iagostorch functions
+float calculateVar(TComDataCU* currCU); // Used to calculate variance of current CU
 void writeIntermediateCU(TComDataCU *CU);
 int   shouldForceSkip     (TComDataCU* currCU); // This function defines if currentCU should be forced to skip. Remaining encoding modes are ignored
 
 extern Int extractIntermediateCuInfo;
 extern ofstream intermediateCuInfo;
+extern Int** samplesMatrix;
 
 // iagostorch end
 
@@ -1894,10 +1898,50 @@ Void TEncCu::xCtuCollectARLStats(TComDataCU* pCtu )
 
 // iagostorch begin
 
+// This function determines if the current CU should be forced into skip (early skip) or
+// the evaluation of all encoding modes will be performed (normal encoding)
 int shouldForceSkip(TComDataCU* currCU){
-    // This if is a condition to force current CU to be encoded with skip mode
-    if(currCU->getPic()->getPOC() != 0){
-        return 0;
+    
+    // If current CU is in inter slice
+    if(currCU->getPic()->getSlice(0)->isIntra() == false){
+    
+        gettimeofday(&var1, NULL); // iagostorch
+        float currVar = calculateVar(currCU);   // Calculate variance of current CU
+        gettimeofday(&var2, NULL); // iagostorch
+        varTime += (double) (var2.tv_usec - var1.tv_usec)/1000000 + (double) (var2.tv_sec - var1.tv_sec); // iagostorch
+
+        
+        float currCutoff = -1;
+        
+        // Determines vertical position of CU inside the frame
+        float vertPos = currCU->getCUPelY()/(currCU->getPic()->getFrameHeightInCtus()*64);
+        
+        // If current CU is in polar bands
+        if(vertPos <= UPPER_BAND or vertPos >= LOWER_BAND){
+            // Selects appropriate cutoff variance
+            switch((int) currCU->getDepth(0)){
+                case 0:
+                    currCutoff = CUTOFF_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = CUTOFF_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = CUTOFF_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = CUTOFF_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+
+            // If current CU has variance smaller than threshold
+            if(currVar <= currCutoff){
+                return 1; // Return 1 means early skip
+            }
+        }
     }
     
     return 0;
@@ -2039,4 +2083,39 @@ void writeIntermediateCU(TComDataCU *CU){
 //    } // Target CTU if
     
 }
+
+// This function calculates the variance of luma samples in currCU using samplesMatrix
+float calculateVar(TComDataCU* currCU){
+    int currX, currY;
+    int currDepth, dimension;
+    
+    // Determines boundaries and dimensions of currCU
+    currX = currCU->getCUPelX();
+    currY = currCU->getCUPelY();
+    currDepth = currCU->getDepth(0);
+    dimension = 1 << (6-currDepth);
+
+    float sum = 0.0;
+    
+    // Sums all samples inside the CU
+    for(int i=currY; i<currY+dimension; i++){
+        for(int j=currX; j<currX+dimension; j++){
+            sum = sum + samplesMatrix[i][j];
+        }
+    }
+    
+    float average = sum/(dimension*dimension);
+    float variance = 0.0;
+    
+    // Variance calculation consiering samples values and average
+    for(int i=currY; i<currY+dimension; i++){
+        for(int j=currX; j<currX+dimension; j++){
+            variance = variance + pow(samplesMatrix[i][j]-average, 2);
+        }
+    }
+    variance = variance/(dimension*dimension-1);
+    
+    return variance;
+}
+
 // iagostorch end
