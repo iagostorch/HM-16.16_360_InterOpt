@@ -114,6 +114,36 @@ inline Int64 abs (Int64 x) { return _abs64(x); };
 static const float UPPER_BAND = 0.25;
 static const float LOWER_BAND = 0.75;
 
+// 50% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 80.0;
+//static const float CUTOFF_VAR_32 = 30.0;
+//static const float CUTOFF_VAR_16 = 12.6;
+//static const float CUTOFF_VAR_8 = 6.0;
+
+// 55% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 100.0;
+//static const float CUTOFF_VAR_32 = 40.0;
+//static const float CUTOFF_VAR_16 = 16.0;
+//static const float CUTOFF_VAR_8 = 6.0;
+
+// 60% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 140.0;
+//static const float CUTOFF_VAR_32 = 60.0;
+//static const float CUTOFF_VAR_16 = 24.0;
+//static const float CUTOFF_VAR_8 = 8.0;
+
+// 65% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 180.0;
+//static const float CUTOFF_VAR_32 = 80.0;
+//static const float CUTOFF_VAR_16 = 32.0;
+//static const float CUTOFF_VAR_8 = 12.0;
+
+// 70% of skips occur in CUs with variance lower than these tresholds
+//static const float CUTOFF_VAR_64 = 200.0;
+//static const float CUTOFF_VAR_32 = 110.0;
+//static const float CUTOFF_VAR_16 = 44.0;
+//static const float CUTOFF_VAR_8 = 18.0;
+
 // 75% of skips occur in CUs with variance lower than these tresholds
 //static const float CUTOFF_VAR_64 = 280.0;
 //static const float CUTOFF_VAR_32 = 160.0;
