@@ -115,58 +115,58 @@ static const float UPPER_BAND = 0.25;
 static const float LOWER_BAND = 0.75;
 
 // 50% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 80.0;
-//static const float CUTOFF_VAR_32 = 30.0;
-//static const float CUTOFF_VAR_16 = 12.6;
-//static const float CUTOFF_VAR_8 = 6.0;
+static const float CUTOFF_50_VAR_64 = 80.0;
+static const float CUTOFF_50_VAR_32 = 30.0;
+static const float CUTOFF_50_VAR_16 = 12.6;
+static const float CUTOFF_50_VAR_8 = 6.0;
 
 // 55% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 100.0;
-//static const float CUTOFF_VAR_32 = 40.0;
-//static const float CUTOFF_VAR_16 = 16.0;
-//static const float CUTOFF_VAR_8 = 6.0;
+static const float CUTOFF_55_VAR_64 = 100.0;
+static const float CUTOFF_55_VAR_32 = 40.0;
+static const float CUTOFF_55_VAR_16 = 16.0;
+static const float CUTOFF_55_VAR_8 = 6.0;
 
 // 60% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 140.0;
-//static const float CUTOFF_VAR_32 = 60.0;
-//static const float CUTOFF_VAR_16 = 24.0;
-//static const float CUTOFF_VAR_8 = 8.0;
+static const float CUTOFF_60_VAR_64 = 140.0;
+static const float CUTOFF_60_VAR_32 = 60.0;
+static const float CUTOFF_60_VAR_16 = 24.0;
+static const float CUTOFF_60_VAR_8 = 8.0;
 
 // 65% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 180.0;
-//static const float CUTOFF_VAR_32 = 80.0;
-//static const float CUTOFF_VAR_16 = 32.0;
-//static const float CUTOFF_VAR_8 = 12.0;
+static const float CUTOFF_65_VAR_64 = 180.0;
+static const float CUTOFF_65_VAR_32 = 80.0;
+static const float CUTOFF_65_VAR_16 = 32.0;
+static const float CUTOFF_65_VAR_8 = 12.0;
 
 // 70% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 200.0;
-//static const float CUTOFF_VAR_32 = 110.0;
-//static const float CUTOFF_VAR_16 = 44.0;
-//static const float CUTOFF_VAR_8 = 18.0;
+static const float CUTOFF_70_VAR_64 = 200.0;
+static const float CUTOFF_70_VAR_32 = 110.0;
+static const float CUTOFF_70_VAR_16 = 44.0;
+static const float CUTOFF_70_VAR_8 = 18.0;
 
 // 75% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 280.0;
-//static const float CUTOFF_VAR_32 = 160.0;
-//static const float CUTOFF_VAR_16 = 68.0;
-//static const float CUTOFF_VAR_8 = 26.0;
+static const float CUTOFF_75_VAR_64 = 280.0;
+static const float CUTOFF_75_VAR_32 = 160.0;
+static const float CUTOFF_75_VAR_16 = 68.0;
+static const float CUTOFF_75_VAR_8 = 26.0;
 
 // 80% of skips occur in CUs with variance lower than these tresholds
-static const float CUTOFF_VAR_64 = 360.0;
-static const float CUTOFF_VAR_32 = 230.0;
-static const float CUTOFF_VAR_16 = 116.0;
-static const float CUTOFF_VAR_8 = 40.0;
+static const float CUTOFF_80_VAR_64 = 360.0;
+static const float CUTOFF_80_VAR_32 = 230.0;
+static const float CUTOFF_80_VAR_16 = 116.0;
+static const float CUTOFF_80_VAR_8 = 40.0;
 
 //// 85% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 460.0;
-//static const float CUTOFF_VAR_32 = 320.0;
-//static const float CUTOFF_VAR_16 = 192.0;
-//static const float CUTOFF_VAR_8 = 84.0;
-//
+static const float CUTOFF_85_VAR_64 = 460.0;
+static const float CUTOFF_85_VAR_32 = 320.0;
+static const float CUTOFF_85_VAR_16 = 192.0;
+static const float CUTOFF_85_VAR_8 = 84.0;
+
 //// 90% of skips occur in CUs with variance lower than these tresholds
-//static const float CUTOFF_VAR_64 = 640.0;
-//static const float CUTOFF_VAR_32 = 480.0;
-//static const float CUTOFF_VAR_16 = 332.0;
-//static const float CUTOFF_VAR_8 = 176.0;
+static const float CUTOFF_90_VAR_64 = 640.0;
+static const float CUTOFF_90_VAR_32 = 480.0;
+static const float CUTOFF_90_VAR_16 = 332.0;
+static const float CUTOFF_90_VAR_8 = 176.0;
 
 // iagostorch end
 

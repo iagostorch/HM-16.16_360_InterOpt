@@ -52,6 +52,13 @@
 #define MACRO_TO_STRING_HELPER(val) #val
 #define MACRO_TO_STRING(val) MACRO_TO_STRING_HELPER(val)
 
+// iagostorch begin
+// Encoding parameters used to enable/disable implemented techniques
+extern int iagoEarlySkip;
+extern float iagoEarlySkipIntegral;
+
+// iagostorch end
+
 using namespace std;
 namespace po = df::program_options_lite;
 
@@ -690,6 +697,10 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   ("WarnUnknowParameter,w",                           warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
 
   // File, I/O and source parameters
+  // iagostorch begin
+  ("IagoEarlySkip",                                   iagoEarlySkip,                                        0, "Enable the Early Skip technique based on block variance")
+  ("IagoEarlySkipIntegral",                           iagoEarlySkipIntegral,                      (float) 0.0, "Control the variance threshold for early skip")
+  // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
   ("ReconFile,o",                                     m_reconFileName,                             string(""), "Reconstructed YUV output file name")

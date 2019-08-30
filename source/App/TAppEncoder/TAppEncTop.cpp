@@ -50,6 +50,13 @@
 #include "TAppEncHelper360/TExt360AppEncTop.h"
 #endif
 
+// iagostorch begin
+
+extern int iagoEarlySkip;
+extern float iagoEarlySkipIntegral;
+
+// iagostorch end
+
 using namespace std;
 
 //! \ingroup TAppEncoder
@@ -493,6 +500,13 @@ Void TAppEncTop::encode()
 
   printChromaFormat();
 
+  // iagostorch begin
+  printf("\n###############################################\n");
+  printf("Iago Storch custom encoding parameters:\n");
+  printf("\tEarly SKip:          %d\n", iagoEarlySkip);
+  printf("\tEarly SKip Integral: %.2f\n", iagoEarlySkip==1 ? iagoEarlySkipIntegral:0.0);
+  printf("###############################################\n\n\n");
+  // iagostorch end
   // main encoder loop
   Int   iNumEncoded = 0;
   Bool  bEos = false;

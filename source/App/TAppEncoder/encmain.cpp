@@ -51,6 +51,9 @@ Int extractFinalCuInfo = 1;
 Int extractIntermediateCuInfo = 1;
 Int** samplesMatrix; // Used to store the samples value for future variancecalculation
 
+int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
+float iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip
+
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
 double checkInterTime = 0.0;
