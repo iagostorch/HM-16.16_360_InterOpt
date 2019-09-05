@@ -53,7 +53,9 @@
 // iagostorch begin
 
 extern int iagoEarlySkip;
-extern float iagoEarlySkipIntegral;
+extern double *iagoEarlySkipIntegral;
+extern double *iagoBandsDistribution;
+extern int iagoNdivisions;
 
 // iagostorch end
 
@@ -503,8 +505,12 @@ Void TAppEncTop::encode()
   // iagostorch begin
   printf("\n###############################################\n");
   printf("Iago Storch custom encoding parameters:\n");
-  printf("\tEarly SKip:          %d\n", iagoEarlySkip);
-  printf("\tEarly SKip Integral: %.2f\n", iagoEarlySkip==1 ? iagoEarlySkipIntegral:0.0);
+  printf("\tEarly Skip:          %d\n", iagoEarlySkip);
+  printf("\tNumber of bands:     %d\n", iagoNdivisions+1);
+    cout<<"\tBands Distribution:  "; for(int i = 0; i<iagoNdivisions; i++) cout << iagoBandsDistribution[i] << ", ";
+  cout << endl;
+  cout <<"\tEarly Skip Integral: "; for(int i=0; i<iagoNdivisions/2; i++) cout << iagoEarlySkipIntegral[i] << ", " ;
+  cout << endl;
   printf("###############################################\n\n\n");
   // iagostorch end
   // main encoder loop

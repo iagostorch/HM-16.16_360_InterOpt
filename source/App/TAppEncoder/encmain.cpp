@@ -52,7 +52,9 @@ Int extractIntermediateCuInfo = 1;
 Int** samplesMatrix; // Used to store the samples value for future variancecalculation
 
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
-float iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip
+double *iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip in each band
+double *iagoBandsDistribution; // Custom encoding parameter. Controle the size of each band
+int iagoNdivisions;
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
@@ -169,7 +171,7 @@ int main(int argc, char* argv[])
   cout << "|||FME:  " << fmeTime << endl;
   cout << "|calcRdInter: " << calcRdInter << endl; 
   cout << "|checkBestModeInter: " << checkBestModeInter << endl; 
-  
+   
 // iagostorch end 
  
   // destroy application encoder class
