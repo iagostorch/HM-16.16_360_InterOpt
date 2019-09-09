@@ -42,6 +42,14 @@
 #include "TAppCommon/program_options_lite.h"
 
 // iagostorch begin
+
+// Variables to controlreduced FME schedule
+int iagoReducedFME;
+int iagoNdivisions;
+double *iagoBandsDistribution;
+Int *iagoBandsHorizontalPrecision;
+Int *iagoBandsVerticalPrecision;
+
 ofstream mvFile;
 ofstream finalCuInfo;
 ofstream intermediateCuInfo;

@@ -52,6 +52,16 @@
 #define MACRO_TO_STRING_HELPER(val) #val
 #define MACRO_TO_STRING(val) MACRO_TO_STRING_HELPER(val)
 
+// iagostorch begin
+// Encoding parameters to control reduced FME schedule
+extern int iagoReducedFME;
+extern double *iagoBandsDistribution;
+extern Int *iagoBandsHorizontalPrecision;
+extern Int *iagoBandsVerticalPrecision;
+extern int iagoNdivisions;
+
+// iagostorch end
+
 using namespace std;
 namespace po = df::program_options_lite;
 
@@ -683,6 +693,14 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   SMultiValueInput<Int>  cfg_timeCodeSeiTimeOffsetValue      (std::numeric_limits<Int>::min(), std::numeric_limits<Int>::max(), 0, MAX_TIMECODE_SEI_SETS);
   Int warnUnknowParameter = 0;
 
+  // iagostorch begin
+  // Multi-value input fields:                                // minval, maxval (incl), min_entries, max_entries (incl) [, default values, number of default values]
+  SMultiValueInput<Double> iagoBandsDistribution_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Int> iagoBandsHorizontalPrecision_cfg           (0, std::numeric_limits<Int>::max(), 0, std::numeric_limits<Int>::max());
+  SMultiValueInput<Int> iagoBandsVerticalPrecision_cfg           (0, std::numeric_limits<Int>::max(), 0, std::numeric_limits<Int>::max());
+  
+  // iagostorch end
+  
   po::Options opts;
   opts.addOptions()
   ("help",                                            do_help,                                          false, "this help text")
@@ -690,6 +708,12 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   ("WarnUnknowParameter,w",                           warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
 
   // File, I/O and source parameters
+  // iagostorch begin
+  ("IagoReducedFME",                                  iagoReducedFME,                                       0, "Enable fast FME algorithm. The FME is performed with smaller precision for some blocks")
+  ("IagoBandsDistribution",                           iagoBandsDistribution_cfg,    iagoBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order")
+  ("IagoBandsHorizontalPrecision",                    iagoBandsHorizontalPrecision_cfg,          iagoBandsHorizontalPrecision_cfg, "Array containing the motion estimation horizontal precision for each band, in a top-bottom order")
+  ("IagoBandsVerticalPrecision",                      iagoBandsVerticalPrecision_cfg,            iagoBandsVerticalPrecision_cfg,   "Array containing the motion estimation vertical precision for each band, in a top-bottom order")
+  // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
   ("ReconFile,o",                                     m_reconFileName,                             string(""), "Reconstructed YUV output file name")
@@ -1149,6 +1173,31 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
     m_framesToBeEncoded *= 2;
   }
 
+  // iagostorch begin
+  // Parse encoding parameters and fill array for bands distribution and FME precision in each band
+  if(iagoBandsDistribution_cfg.values.size() > 0){ // A specific bands distribution was provided in the encoding
+      
+      int nElements = iagoBandsDistribution_cfg.values.size();
+      assert((nElements == 2) or (nElements == 4));                             // there should be either 3 or 5 bands (2 ou 4 divisions)
+      assert(iagoBandsHorizontalPrecision_cfg.values.size() == nElements/2);    // there should be one precision for each pair of bands
+      assert(iagoBandsVerticalPrecision_cfg.values.size() == nElements/2);
+            
+      iagoNdivisions = nElements;
+      
+      iagoBandsDistribution = (double *) malloc(nElements * sizeof(double));
+      iagoBandsHorizontalPrecision = (Int *) malloc(nElements * sizeof(Int));
+      iagoBandsVerticalPrecision = (Int *) malloc(nElements * sizeof(Int));
+      
+      // copy parsed parameters to control variables
+      for(int el = 0; el < nElements; el++){
+          iagoBandsDistribution[el] = iagoBandsDistribution_cfg.values[el];
+          iagoBandsHorizontalPrecision[el] = iagoBandsHorizontalPrecision_cfg.values[el];
+          iagoBandsVerticalPrecision[el] = iagoBandsVerticalPrecision_cfg.values[el];
+      }   
+  }
+  
+  // iagostorch end
+  
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
     if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)

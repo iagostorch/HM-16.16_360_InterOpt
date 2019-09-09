@@ -50,6 +50,16 @@
 #include "TAppEncHelper360/TExt360AppEncTop.h"
 #endif
 
+// iagostorch begin
+// Encoding parameters to control reduced FME schedule
+extern int iagoReducedFME;
+extern int iagoNdivisions;
+extern double *iagoBandsDistribution;;
+extern Int *iagoBandsHorizontalPrecision;
+extern Int *iagoBandsVerticalPrecision;
+
+// iagostorch end
+
 using namespace std;
 
 //! \ingroup TAppEncoder
@@ -493,6 +503,21 @@ Void TAppEncTop::encode()
 
   printChromaFormat();
 
+  // iagostorch begin
+  // Summary of custom encoding parameters
+  printf("\n###############################################\n");
+  printf("Iago Storch custom encoding parameters:\n");
+  printf("\tReduced FME:          %d\n", iagoReducedFME);
+  printf("\tNumber of bands:      %d\n", iagoNdivisions+1);
+  cout<<("\tBands distribution:   "); for(int el=0;el<iagoNdivisions;el++) cout << iagoBandsDistribution[el] << ", ";
+  cout << endl;
+  cout<<("\tBands Hori Precision: "); for(int el=0;el<iagoNdivisions/2;el++) cout << iagoBandsHorizontalPrecision[el] << ", ";
+  cout << endl;
+  cout<<("\tBands Vert Precision: "); for(int el=0;el<iagoNdivisions/2;el++) cout << iagoBandsVerticalPrecision[el] << ", ";
+  cout << endl;  
+  printf("###############################################\n\n\n");
+  // iagostorch end
+  
   // main encoder loop
   Int   iNumEncoded = 0;
   Bool  bEos = false;

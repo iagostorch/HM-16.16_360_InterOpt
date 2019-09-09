@@ -47,6 +47,13 @@
 
 // iagostorch begin
 
+// Custom encoding parameters to control reduced FME schedule
+extern int iagoReducedFME;
+extern int iagoNdivisions;
+extern double *iagoBandsDistribution;
+extern Int *iagoBandsHorizontalPrecision;
+extern Int *iagoBandsVerticalPrecision;
+
 #include <sys/time.h>
 
 // Variables to track execution time of some encoding steps
@@ -3975,9 +3982,13 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
   // Fractional motion estimation (FME) iagostorch
   const Bool bIsLosslessCoded = pcCU->getCUTransquantBypass(uiPartAddr) != 0;
   
-  
+  // iagostorch begin
+  // Initialize reduced FME. At the beginning, quarter pixel is assumed for every block
   int parametersFME[DIRECTIONS_FME] = {QUARTER_PEL, QUARTER_PEL};
-  getFmeSchedule(pcCU, parametersFME);
+  if(iagoReducedFME){   // If custom encoding parameter for reduced FME is enabled, then current block must be evaluated to assign a FME precision
+      getFmeSchedule(pcCU, parametersFME);
+  }    
+  
 //  cout << "CU " << pcCU->getCUPelX() << "x" << pcCU->getCUPelY() << "\tVert " << parametersFME[VERTICAL_FME] << " Hori " << parametersFME[HORIZONTAL_FME] << endl;
   
   xPatternSearchFracDIF_adaptive( bIsLosslessCoded, pcPatternKey, piRefY, iRefStride, &rcMv, cMvHalf, cMvQter, ruiCost, parametersFME );
@@ -3986,6 +3997,7 @@ Void TEncSearch::xMotionEstimation( TComDataCU* pcCU, TComYuv* pcYuvOrg, Int iPa
     
   gettimeofday(&tv26, NULL); // iagostorch
   fmeTime += (double) (tv26.tv_usec - tv25.tv_usec)/1000000 + (double) (tv26.tv_sec - tv25.tv_sec); // iagostorch
+  // iagostorch end
   
   m_pcRdCost->setCostScale( 0 );
   rcMv <<= 2;
@@ -4984,25 +4996,38 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
   }
 }
 
-// Based on pcCU data, it determines the FME resolution for
-// vertical and horizontal searches
+// Based on pcCU data and on custom encoding parameters it determines
+// the FME resolution for vertical and horizontal searches
+// 2: quarter-pel, 1: half-pel, 0: integer
 void TEncSearch::getFmeSchedule(TComDataCU* pcCU, Int* fmeSchedule){
-  Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*UPPER_BAND;
-  Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*LOWER_BAND;
   
-  int currY = pcCU->getCUPelY();
+  // calculate vertical position of current CU
+  float vertPos = (float) pcCU->getCUPelY()/(pcCU->getPic()->getFrameHeightInCtus()*64);
+    
+  int nBands = iagoNdivisions+1;
   
-  if(currY <= upperBandThreshold){ // If current CU is in upper band
-      fmeSchedule[VERTICAL_FME] = QUARTER_PEL;
-      fmeSchedule[HORIZONTAL_FME] = QUARTER_PEL;
+  if(nBands == 3){
+      // if it is in polar region
+      if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[1]){
+        fmeSchedule[VERTICAL_FME] = iagoBandsVerticalPrecision[0];
+        fmeSchedule[HORIZONTAL_FME] = iagoBandsHorizontalPrecision[0];
+      }
   }
-  else if(currY >= lowerBandThreshold){ // If current CU is in lower band
-       fmeSchedule[VERTICAL_FME] = QUARTER_PEL;
-       fmeSchedule[HORIZONTAL_FME] = QUARTER_PEL;
+  else if(nBands == 5){
+      // if it is in polar region
+      if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[3]){
+        fmeSchedule[VERTICAL_FME] = iagoBandsVerticalPrecision[0];
+        fmeSchedule[HORIZONTAL_FME] = iagoBandsHorizontalPrecision[0];          
+      }
+      // if it is in mid-polar region
+      else if(vertPos <= iagoBandsDistribution[1] or vertPos >= iagoBandsDistribution[2]){
+        fmeSchedule[VERTICAL_FME] = iagoBandsVerticalPrecision[1];
+        fmeSchedule[HORIZONTAL_FME] = iagoBandsHorizontalPrecision[1];          
+      }
   }
   else{
-       fmeSchedule[VERTICAL_FME] = QUARTER_PEL;
-       fmeSchedule[HORIZONTAL_FME] = QUARTER_PEL;      
+      // Invalid number of bands
+      cout << "\n\n ERROR - Invalid number of bands\n\n" << endl;
   }
 }
 
