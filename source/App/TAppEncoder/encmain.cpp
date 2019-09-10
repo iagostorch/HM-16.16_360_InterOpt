@@ -42,6 +42,14 @@
 #include "TAppCommon/program_options_lite.h"
 
 // iagostorch begin
+
+// variables to control reduced search range in raster step
+int iagoReducedSR;
+int iagoNdivisions;
+double *iagoBandsDistribution;
+double *iagoBandsScaleVerticalSR;
+double *iagoBandsScaleHorizontalSR;
+
 ofstream mvFile;
 ofstream finalCuInfo;
 ofstream intermediateCuInfo;

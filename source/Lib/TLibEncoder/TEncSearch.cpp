@@ -54,6 +54,13 @@ extern Int extractOnlyRasterPUs;
 extern Int extractTZInfo;
 extern ofstream mvFile;
 
+extern int iagoReducedSR;
+extern int iagoNdivisions;
+extern double *iagoBandsDistribution;
+extern double *iagoBandsScaleVerticalSR;
+extern double *iagoBandsScaleHorizontalSR;
+Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVerTop, Int &iSrchRngVerBottom,Int &iSrchRngHorLeft,Int &iSrchRngHorRight);
+
 // iagostorch end
 
 //! \ingroup TLibEncoder
@@ -4141,26 +4148,14 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
       // iagostorch begin 
       // track if raster scan is done
       didRaster = 1;
-
-      // In case the current CU is in the polar bands, reduce the vertical search range by scaleVerticalSR
-      // Otherwise, perform the encoding normally
-      Int upperBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*upperThreshold;
-      Int lowerBandThreshold = pcCU->getPic()->getFrameHeightInCtus()*64*lowerThreshold;
-      int currY = pcCU->getCUPelY();
       
-      if(currY <= upperBandThreshold){ // If current CU is in upper band
-//          cout << "Upper ";
-          iSrchRngVerTop    = iSrchRngVerTop    * scaleVerticalSR;
-          iSrchRngVerBottom = iSrchRngVerBottom * scaleVerticalSR;
+      
+      if(iagoReducedSR){
+          calculateSearchRangeScale(pcCU, iSrchRngVerTop, iSrchRngVerBottom, iSrchRngHorLeft, iSrchRngHorRight);
       }
-      else if(currY >= lowerBandThreshold){ // If current CU is in lower band
-//          cout << "Lower ";
-          iSrchRngVerTop    = iSrchRngVerTop    * scaleVerticalSR;
-          iSrchRngVerBottom = iSrchRngVerBottom * scaleVerticalSR;
-      }
-       
+            
       // iagostorch end
-      
+
       cStruct.uiBestDistance = iRaster;
       for ( iStartY = iSrchRngVerTop; iStartY <= iSrchRngVerBottom; iStartY += iRaster )
       {
@@ -5872,5 +5867,45 @@ Void  TEncSearch::setWpScalingDistParam( TComDataCU* pcCU, Int iRefIdx, RefPicLi
     m_cDistParam.wpCur = wp1;
   }
 }
+
+// iagostorch begin
+// This function determines the search range employed during raster step of TZSearch
+// based on custom encoding parameters
+Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVerTop, Int &iSrchRngVerBottom, Int &iSrchRngHorLeft, Int &iSrchRngHorRight){
+    
+    int nBands = iagoNdivisions+1;
+    float vertPos = (float)currCU->getCUPelY()/(currCU->getPic()->getFrameHeightInCtus()*64);
+    
+    if (nBands == 3){
+       if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[1]){
+       // It is in polar bands
+           iSrchRngVerTop = iSrchRngVerTop        * iagoBandsScaleVerticalSR[0];
+           iSrchRngVerBottom = iSrchRngVerBottom  * iagoBandsScaleVerticalSR[0];
+           iSrchRngHorLeft = iSrchRngHorLeft      * iagoBandsScaleHorizontalSR[0];
+           iSrchRngHorRight = iSrchRngHorRight    * iagoBandsScaleHorizontalSR[0];
+        } 
+    }
+    else if(nBands == 5){
+       if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[3]){
+       // It is in polar bands
+           iSrchRngVerTop = iSrchRngVerTop        * iagoBandsScaleVerticalSR[0];
+           iSrchRngVerBottom = iSrchRngVerBottom  * iagoBandsScaleVerticalSR[0];
+           iSrchRngHorLeft = iSrchRngHorLeft      * iagoBandsScaleHorizontalSR[0];
+           iSrchRngHorRight = iSrchRngHorRight    * iagoBandsScaleHorizontalSR[0];
+        } 
+       else if(vertPos <= iagoBandsDistribution[1] or vertPos >= iagoBandsDistribution[2]){
+        // It is in mid-polar bands
+           iSrchRngVerTop = iSrchRngVerTop        * iagoBandsScaleVerticalSR[1];
+           iSrchRngVerBottom = iSrchRngVerBottom  * iagoBandsScaleVerticalSR[1];
+           iSrchRngHorLeft = iSrchRngHorLeft      * iagoBandsScaleHorizontalSR[1];
+           iSrchRngHorRight = iSrchRngHorRight    * iagoBandsScaleHorizontalSR[1];
+        }
+    }
+    else{
+        cout << "Error - Invalid number of bands in reduced search range technique" << endl;
+    }
+}     
+
+// iagostorch end
 
 //! \}

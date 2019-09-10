@@ -50,6 +50,15 @@
 #include "TAppEncHelper360/TExt360AppEncTop.h"
 #endif
 
+// iagostorch begin
+// variables to control reduced search range in raster step
+extern int iagoReducedSR;
+extern int iagoNdivisions;
+extern double *iagoBandsDistribution;
+extern double *iagoBandsScaleVerticalSR;
+extern double *iagoBandsScaleHorizontalSR;
+// iagostorch end
+
 using namespace std;
 
 //! \ingroup TAppEncoder
@@ -493,6 +502,21 @@ Void TAppEncTop::encode()
 
   printChromaFormat();
 
+  // iagostorch begin
+  // Summary of custom encoding parameters
+  printf("\n###############################################\n");
+  printf("Iago Storch custom encoding parameters:\n");
+  printf("\tReduced SR :          %d\n", iagoReducedSR);
+  printf("\tNumber of bands:      %d\n", iagoNdivisions+1);
+  cout<<("\tBands distribution:   "); for(int el=0;el<iagoNdivisions;el++) cout << iagoBandsDistribution[el] << ", ";
+  cout << endl;
+  cout<<("\tBands Hori Scale:     "); for(int el=0;el<iagoNdivisions/2;el++) cout << iagoBandsScaleHorizontalSR[el] << ", ";
+  cout << endl;
+  cout<<("\tBands Vert Scale:     "); for(int el=0;el<iagoNdivisions/2;el++) cout << iagoBandsScaleVerticalSR[el] << ", ";
+  cout << endl;  
+  printf("###############################################\n\n\n");
+  // iagostorch end
+  
   // main encoder loop
   Int   iNumEncoded = 0;
   Bool  bEos = false;
