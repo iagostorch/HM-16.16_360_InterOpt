@@ -5874,10 +5874,13 @@ Void  TEncSearch::setWpScalingDistParam( TComDataCU* pcCU, Int iRefIdx, RefPicLi
 Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVerTop, Int &iSrchRngVerBottom, Int &iSrchRngHorLeft, Int &iSrchRngHorRight){
     
     int nBands = iagoNdivisions+1;
-    float vertPos = (float)currCU->getCUPelY()/(currCU->getPic()->getFrameHeightInCtus()*64);
+    
+    int cuHeight = 64 >> (currCU->getDepth(0));
+    int absVertPos = currCU->getCUPelY() + cuHeight/2;
+    float relativeVertPos = (float) absVertPos/(currCU->getPic()->getFrameHeightInCtus()*64);
     
     if (nBands == 3){
-       if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[1]){
+       if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[1]){
        // It is in polar bands
            iSrchRngVerTop = iSrchRngVerTop        * iagoBandsScaleVerticalSR[0];
            iSrchRngVerBottom = iSrchRngVerBottom  * iagoBandsScaleVerticalSR[0];
@@ -5886,14 +5889,14 @@ Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVe
         } 
     }
     else if(nBands == 5){
-       if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[3]){
+       if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[3]){
        // It is in polar bands
            iSrchRngVerTop = iSrchRngVerTop        * iagoBandsScaleVerticalSR[0];
            iSrchRngVerBottom = iSrchRngVerBottom  * iagoBandsScaleVerticalSR[0];
            iSrchRngHorLeft = iSrchRngHorLeft      * iagoBandsScaleHorizontalSR[0];
            iSrchRngHorRight = iSrchRngHorRight    * iagoBandsScaleHorizontalSR[0];
         } 
-       else if(vertPos <= iagoBandsDistribution[1] or vertPos >= iagoBandsDistribution[2]){
+       else if(relativeVertPos <= iagoBandsDistribution[1] or relativeVertPos >= iagoBandsDistribution[2]){
         // It is in mid-polar bands
            iSrchRngVerTop = iSrchRngVerTop        * iagoBandsScaleVerticalSR[1];
            iSrchRngVerBottom = iSrchRngVerBottom  * iagoBandsScaleVerticalSR[1];
