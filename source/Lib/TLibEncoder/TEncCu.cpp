@@ -1926,11 +1926,14 @@ int shouldForceSkip(TComDataCU* currCU){
         float currCutoff = -1;
         
         // Determines vertical position of CU inside the frame
-        float vertPos = (float)currCU->getCUPelY()/(currCU->getPic()->getFrameHeightInCtus()*64);
+        int cuHeight = 64 >> (currCU->getDepth(0));
+        int absVertPos = currCU->getCUPelY() + cuHeight/2;
+        float relativeVertPos = (float) absVertPos/(currCU->getPic()->getFrameHeightInCtus()*64);
         int nBands = iagoNdivisions+1;
+        
         // If current CU is in polar bands
         if(nBands == 3){
-            if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[1]){
+            if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[1]){
                 currCutoff = getCurrentCutoffVariance_3BandsPolar((int) currCU->getDepth(0));
                 if(currVar <= currCutoff){
                     return 1;
@@ -1938,13 +1941,13 @@ int shouldForceSkip(TComDataCU* currCU){
             }
         }
         else if(nBands == 5){
-            if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[3]){
+            if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[3]){
                 currCutoff = getCurrentCutoffVariance_5BandsPolar((int) currCU->getDepth(0));
                 if(currVar <= currCutoff){
                     return 1;
                 }
             }
-            else if(vertPos <= iagoBandsDistribution[1] or vertPos >= iagoBandsDistribution[2]){
+            else if(relativeVertPos <= iagoBandsDistribution[1] or relativeVertPos >= iagoBandsDistribution[2]){
                 currCutoff = getCurrentCutoffVariance_5BandsMidPolar((int) currCU->getDepth(0));
                 if(currVar <= currCutoff){
                     return 1;
