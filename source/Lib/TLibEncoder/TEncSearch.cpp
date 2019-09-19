@@ -5002,25 +5002,27 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
 void TEncSearch::getFmeSchedule(TComDataCU* pcCU, Int* fmeSchedule){
   
   // calculate vertical position of current CU
-  float vertPos = (float) pcCU->getCUPelY()/(pcCU->getPic()->getFrameHeightInCtus()*64);
+  int cuHeight = 64 >> (pcCU->getDepth(0));
+  int absVertPos = pcCU->getCUPelY() + cuHeight/2;
+  float relativeVertPos = (float) absVertPos/(pcCU->getPic()->getFrameHeightInCtus()*64);
     
   int nBands = iagoNdivisions+1;
   
   if(nBands == 3){
       // if it is in polar region
-      if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[1]){
+      if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[1]){
         fmeSchedule[VERTICAL_FME] = iagoBandsVerticalPrecision[0];
         fmeSchedule[HORIZONTAL_FME] = iagoBandsHorizontalPrecision[0];
       }
   }
   else if(nBands == 5){
       // if it is in polar region
-      if(vertPos <= iagoBandsDistribution[0] or vertPos >= iagoBandsDistribution[3]){
+      if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[3]){
         fmeSchedule[VERTICAL_FME] = iagoBandsVerticalPrecision[0];
         fmeSchedule[HORIZONTAL_FME] = iagoBandsHorizontalPrecision[0];          
       }
       // if it is in mid-polar region
-      else if(vertPos <= iagoBandsDistribution[1] or vertPos >= iagoBandsDistribution[2]){
+      else if(relativeVertPos <= iagoBandsDistribution[1] or relativeVertPos >= iagoBandsDistribution[2]){
         fmeSchedule[VERTICAL_FME] = iagoBandsVerticalPrecision[1];
         fmeSchedule[HORIZONTAL_FME] = iagoBandsHorizontalPrecision[1];          
       }
