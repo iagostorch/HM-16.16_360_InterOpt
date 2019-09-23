@@ -43,6 +43,7 @@
 
 Int** extractLumaSamples(TComPic* pcPic); // Used to extract the samples and save them in samplesMatrix
 extern Int** samplesMatrix;
+extern int iagoIs10bitsVideo;
 
 // iagostorch end
 
@@ -1333,7 +1334,16 @@ Int** extractLumaSamples(TComPic* pcPic){
         //iterate inside the 64x64 CU pixels
         for( int y = 0; y < 64; y++ ){
             for( int x = 0; x < 64; x++ ){  
-                pixelMtx[y+h][x+w] = pxlsPerCu[x];
+                
+                // if video is in 10 bits format, we convert it to 8 bits to 
+                // employ the same variance cutoff threshold when encoding
+                // any video
+                if(iagoIs10bitsVideo){
+                    pixelMtx[y+h][x+w] = (pxlsPerCu[x] >> 2);
+                }
+                else{
+                    pixelMtx[y+h][x+w] = pxlsPerCu[x];
+                }
             }
         //increment the step    
         pxlsPerCu += stride;

@@ -56,6 +56,7 @@ extern int iagoEarlySkip;
 extern double *iagoEarlySkipIntegral;
 extern double *iagoBandsDistribution;
 extern int iagoNdivisions;
+extern int iagoIs10bitsVideo;
 
 // iagostorch end
 
@@ -254,6 +255,14 @@ Void TAppEncTop::xInitLibCfg()
     m_cTEncTop.setBitDepth((ChannelType)channelType, m_internalBitDepth[channelType]);
     m_cTEncTop.setPCMBitDepth((ChannelType)channelType, m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[channelType] : m_internalBitDepth[channelType]);
   }
+ 
+  // iagostorch begin
+  // if video is 10 bits, then it must be converted to 8 bits in order
+  // to employ the same variance threshold for every video
+  if(m_internalBitDepth[CHANNEL_TYPE_LUMA] == 10){
+      iagoIs10bitsVideo = 1;
+  }
+  // iagostorch end
 
   m_cTEncTop.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cTEncTop.setMaxNumMergeCand                                   ( m_maxNumMergeCand );

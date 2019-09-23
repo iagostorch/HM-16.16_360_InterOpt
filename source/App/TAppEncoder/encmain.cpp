@@ -55,6 +55,7 @@ int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on bl
 double *iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip in each band
 double *iagoBandsDistribution; // Custom encoding parameter. Controle the size of each band
 int iagoNdivisions;
+int iagoIs10bitsVideo = 0;    // Detects if video is 10 bits. If it is 10 bits, it must be converted to 8 bits to employ the same variance cutoff
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
