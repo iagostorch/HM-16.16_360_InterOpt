@@ -49,6 +49,12 @@ using namespace std;
 
 #include <sys/time.h>
 
+// Following files contain the thresholds used for early skip in multiple
+// QPs, block sizes and integral values
+#include "../../Lib/TLibCommon/CUTOFF_VARIANCE_3B_POLAR_QPs.h"
+#include "../../Lib/TLibCommon/CUTOFF_VARIANCE_5B_POLAR_QPs.h"
+#include "../../Lib/TLibCommon/CUTOFF_VARIANCE_5B_MID-POLAR_QPs.h"
+
 // Variables to track execution time of some encoding steps
 struct timeval  tv3, tv4;
 struct timeval  tv5, tv6;
