@@ -50,6 +50,16 @@
 #include "TAppEncHelper360/TExt360AppEncTop.h"
 #endif
 
+// iagostorch begin
+
+extern int iagoEarlySkip;
+extern double *iagoEarlySkipIntegral;
+extern double *iagoBandsDistribution;
+extern int iagoNdivisions;
+extern int iagoIs10bitsVideo;
+
+// iagostorch end
+
 using namespace std;
 
 //! \ingroup TAppEncoder
@@ -245,6 +255,14 @@ Void TAppEncTop::xInitLibCfg()
     m_cTEncTop.setBitDepth((ChannelType)channelType, m_internalBitDepth[channelType]);
     m_cTEncTop.setPCMBitDepth((ChannelType)channelType, m_bPCMInputBitDepthFlag ? m_MSBExtendedBitDepth[channelType] : m_internalBitDepth[channelType]);
   }
+ 
+  // iagostorch begin
+  // if video is 10 bits, then it must be converted to 8 bits in order
+  // to employ the same variance threshold for every video
+  if(m_internalBitDepth[CHANNEL_TYPE_LUMA] == 10){
+      iagoIs10bitsVideo = 1;
+  }
+  // iagostorch end
 
   m_cTEncTop.setPCMLog2MaxSize                                    ( m_pcmLog2MaxSize);
   m_cTEncTop.setMaxNumMergeCand                                   ( m_maxNumMergeCand );
@@ -493,6 +511,17 @@ Void TAppEncTop::encode()
 
   printChromaFormat();
 
+  // iagostorch begin
+  printf("\n###############################################\n");
+  printf("Iago Storch custom encoding parameters:\n");
+  printf("\tEarly Skip:          %d\n", iagoEarlySkip);
+  printf("\tNumber of bands:     %d\n", iagoNdivisions+1);
+    cout<<"\tBands Distribution:  "; for(int i = 0; i<iagoNdivisions; i++) cout << iagoBandsDistribution[i] << ", ";
+  cout << endl;
+  cout <<"\tEarly Skip Integral: "; for(int i=0; i<iagoNdivisions/2; i++) cout << iagoEarlySkipIntegral[i] << ", " ;
+  cout << endl;
+  printf("###############################################\n\n\n");
+  // iagostorch end
   // main encoder loop
   Int   iNumEncoded = 0;
   Bool  bEos = false;

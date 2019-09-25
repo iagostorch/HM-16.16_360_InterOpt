@@ -49,21 +49,41 @@ using namespace std;
 
 #include <sys/time.h>
 
+// Following files contain the thresholds used for early skip in multiple
+// QPs, block sizes and integral values
+#include "../../Lib/TLibCommon/CUTOFF_VARIANCE_3B_POLAR_QPs.h"
+#include "../../Lib/TLibCommon/CUTOFF_VARIANCE_5B_POLAR_QPs.h"
+#include "../../Lib/TLibCommon/CUTOFF_VARIANCE_5B_MID-POLAR_QPs.h"
+
 // Variables to track execution time of some encoding steps
 struct timeval  tv3, tv4;
 struct timeval  tv5, tv6;
 struct timeval  tv15, tv16;
 struct timeval  tv23, tv24;
+struct timeval  var1, var2;
 extern double checkInterTime;
 extern double predInterSearchTime;
 extern double checkIntraTime;
 extern double calcRdInter;
 extern double checkBestModeInter;
+extern double varTime;
 
-void writeIntermediateCU(TComDataCU *CU);//{
+extern int iagoEarlySkip; // Custom encoding parameter to enable early skip based on block variance
+extern double *iagoEarlySkipIntegral; // Custom encoding parameter to set variance threshold
+extern int iagoNdivisions;
+extern double *iagoBandsDistribution; // Custom encoding parameter. Controle the size of each band
+
+// Header of iagostorch functions
+float calculateVar(TComDataCU* currCU); // Used to calculate variance of current CU
+void writeIntermediateCU(TComDataCU *CU);
+int   shouldForceSkip     (TComDataCU* currCU); // This function defines if currentCU should be forced to skip. Remaining encoding modes are ignored
+float getCurrentCutoffVariance_3BandsPolar(int currDepth);
+float getCurrentCutoffVariance_5BandsPolar(int currDepth);
+float getCurrentCutoffVariance_5BandsMidPolar(int currDepth);
 
 extern Int extractIntermediateCuInfo;
 extern ofstream intermediateCuInfo;
+extern Int** samplesMatrix;
 
 // iagostorch end
 
@@ -533,6 +553,14 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
 
   const Bool bBoundary = !( uiRPelX < sps.getPicWidthInLumaSamples() && uiBPelY < sps.getPicHeightInLumaSamples() );
 
+// iagostorch begin
+  int forceSkip;    // forceSkip is used to force a CU to be encoded with skip. Evaluation of remaining modes are skipped
+  if(iagoEarlySkip)
+      forceSkip = shouldForceSkip(rpcBestCU);
+  else
+      forceSkip = 0;
+     
+  // iagostorch end
   if ( !bBoundary )
   {
     for (Int iQP=iMinQP; iQP<=iMaxQP; iQP++)
@@ -577,10 +605,12 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );//by Competition for inter_2Nx2N
         }
         // SKIP
-        xCheckRDCostMerge2Nx2N( rpcBestCU, rpcTempCU DEBUG_STRING_PASS_INTO(sDebug), &earlyDetectionSkipMode );//by Merge for inter_2Nx2N
+        // iagostorch added forceSKip parameter to following function
+        xCheckRDCostMerge2Nx2N( rpcBestCU, rpcTempCU DEBUG_STRING_PASS_INTO(sDebug), &earlyDetectionSkipMode, forceSkip );//by Merge for inter_2Nx2N
         rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
-
-        if(!m_pcEncCfg->getUseEarlySkipDetection())
+        
+        // iagostorch added !forceSkip to following conditional. When forceSkip is true, ME is not performed for current PU
+        if(!m_pcEncCfg->getUseEarlySkipDetection() and !forceSkip)
         {
           // 2Nx2N, NxN
           gettimeofday(&tv3, NULL);   // iagostorch
@@ -600,7 +630,18 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         iQP = iMinQP;
       }
     }
-
+    
+    // iagostorch begin
+    // When forceSkip is true, different PU partitions in the same CU are ignored
+    // Also, motion estimation and intra prediction are skipped
+    if(forceSkip == 1){
+        earlyDetectionSkipMode = 1;
+    }
+    else{
+        earlyDetectionSkipMode = 0;
+    }
+    // iagostorch end
+    
     if(!earlyDetectionSkipMode)
     {
       for (Int iQP=iMinQP; iQP<=iMaxQP; iQP++)
@@ -840,7 +881,6 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         }
       }
     }
-
     if( rpcBestCU->getTotalCost()!=MAX_DOUBLE )
     {
       m_pcRDGoOnSbacCoder->load(m_pppcRDSbacCoder[uiDepth][CI_NEXT_BEST]);
@@ -1353,7 +1393,8 @@ Int  TEncCu::updateCtuDataISlice(TComDataCU* pCtu, Int width, Int height)
  * \param rpcTempCU
  * \param earlyDetectionSkipMode
  */
-Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU DEBUG_STRING_FN_DECLARE(sDebug), Bool *earlyDetectionSkipMode )
+// iagostorch added forceSkip parameter to this function
+Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU DEBUG_STRING_FN_DECLARE(sDebug), Bool *earlyDetectionSkipMode, int forceSkip )
 {
   assert( rpcTempCU->getSlice()->getSliceType() != I_SLICE );
   if(getFastDeltaQp())
@@ -1390,9 +1431,18 @@ Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTem
   {
     iteration = 2;
   }
+  
+  // iagostorch begin
+  int c = 0;
+  if (forceSkip)
+      c = 1;    // In next for loop, if c=1, then it only tests for skip mode
+  else
+      c = 0;
+  // iagostorch end
   DEBUG_STRING_NEW(bestStr)
 
-  for( UInt uiNoResidual = 0; uiNoResidual < iteration; ++uiNoResidual )
+  // iagostorch changed "uiNoResidual = 0" to "uiNoResidual = c" to enable evaluating only skip mode in some cases
+  for( UInt uiNoResidual = c; uiNoResidual < iteration; ++uiNoResidual )
   {
     for( UInt uiMergeCand = 0; uiMergeCand < numValidMergeCand; ++uiMergeCand )
     {
@@ -1411,7 +1461,7 @@ Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTem
           rpcTempCU->setInterDirSubParts( uhInterDirNeighbours[uiMergeCand], 0, 0, uhDepth ); // interprets depth relative to CTU level
           rpcTempCU->getCUMvField( REF_PIC_LIST_0 )->setAllMvField( cMvFieldNeighbours[0 + 2*uiMergeCand], SIZE_2Nx2N, 0, 0 ); // interprets depth relative to rpcTempCU level
           rpcTempCU->getCUMvField( REF_PIC_LIST_1 )->setAllMvField( cMvFieldNeighbours[1 + 2*uiMergeCand], SIZE_2Nx2N, 0, 0 ); // interprets depth relative to rpcTempCU level
-
+          
           // do MC
           m_pcPredSearch->motionCompensation ( rpcTempCU, m_ppcPredYuvTemp[uhDepth] );
           // estimate residual and encode everything
@@ -1446,7 +1496,7 @@ Void TEncCu::xCheckRDCostMerge2Nx2N( TComDataCU*& rpcBestCU, TComDataCU*& rpcTem
         }
       }
     }
-
+    
     if(uiNoResidual == 0 && m_pcEncCfg->getUseEarlySkipDetection())
     {
       if(rpcBestCU->getQtRootCbf( 0 ) == 0)
@@ -1866,6 +1916,55 @@ Void TEncCu::xCtuCollectARLStats(TComDataCU* pCtu )
 
 // iagostorch begin
 
+// This function determines if the current CU should be forced into skip (early skip) or
+// the evaluation of all encoding modes will be performed (normal encoding)
+int shouldForceSkip(TComDataCU* currCU){
+    
+    // If current CU is in inter slice
+    if(currCU->getPic()->getSlice(0)->isIntra() == false){
+    
+        gettimeofday(&var1, NULL); // iagostorch
+        float currVar = calculateVar(currCU);   // Calculate variance of current CU
+        gettimeofday(&var2, NULL); // iagostorch
+        varTime += (double) (var2.tv_usec - var1.tv_usec)/1000000 + (double) (var2.tv_sec - var1.tv_sec); // iagostorch
+
+        
+        float currCutoff = -1;
+        
+        // Determines vertical position of CU inside the frame
+        int cuHeight = 64 >> (currCU->getDepth(0));
+        int absVertPos = currCU->getCUPelY() + cuHeight/2;
+        float relativeVertPos = (float) absVertPos/(currCU->getPic()->getFrameHeightInCtus()*64);
+        int nBands = iagoNdivisions+1;
+        
+        // If current CU is in polar bands
+        if(nBands == 3){
+            if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[1]){
+                currCutoff = getCurrentCutoffVariance_3BandsPolar((int) currCU->getDepth(0));
+                if(currVar <= currCutoff){
+                    return 1;
+                }
+            }
+        }
+        else if(nBands == 5){
+            if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[3]){
+                currCutoff = getCurrentCutoffVariance_5BandsPolar((int) currCU->getDepth(0));
+                if(currVar <= currCutoff){
+                    return 1;
+                }
+            }
+            else if(relativeVertPos <= iagoBandsDistribution[1] or relativeVertPos >= iagoBandsDistribution[2]){
+                currCutoff = getCurrentCutoffVariance_5BandsMidPolar((int) currCU->getDepth(0));
+                if(currVar <= currCutoff){
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0; // Return 0 means NOT early skip
+}
+
+
 void writeIntermediateCU(TComDataCU *CU){
     int i=0, lenght=0, totalSize;
     int *depth, *predMode, *partSize;
@@ -2001,4 +2100,614 @@ void writeIntermediateCU(TComDataCU *CU){
 //    } // Target CTU if
     
 }
+
+// This function calculates the variance of luma samples in currCU using samplesMatrix
+float calculateVar(TComDataCU* currCU){
+    int currX, currY;
+    int currDepth, dimension;
+    
+    // Determines boundaries and dimensions of currCU
+    currX = currCU->getCUPelX();
+    currY = currCU->getCUPelY();
+    currDepth = currCU->getDepth(0);
+    dimension = 1 << (6-currDepth);
+
+    float sum = 0.0;
+    
+    // Sums all samples inside the CU
+    for(int i=currY; i<currY+dimension; i++){
+        for(int j=currX; j<currX+dimension; j++){
+            sum = sum + samplesMatrix[i][j];
+        }
+    }
+    
+    float average = sum/(dimension*dimension);
+    float variance = 0.0;
+    
+    // Variance calculation consiering samples values and average
+    for(int i=currY; i<currY+dimension; i++){
+        for(int j=currX; j<currX+dimension; j++){
+            variance = variance + pow(samplesMatrix[i][j]-average, 2);
+        }
+    }
+    variance = variance/(dimension*dimension-1);
+    
+    return variance;
+}
+
+float getCurrentCutoffVariance_3BandsPolar(int currDepth){
+    float currCutoff = -1.0;
+    assert(iagoEarlySkipIntegral[0]!=0.0);
+    
+    if(iagoEarlySkipIntegral[0] == 0.50){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_50_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_50_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_50_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_50_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.55){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_55_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_55_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_55_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_55_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.60){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_60_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_60_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_60_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_60_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.65){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_65_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_65_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_65_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_65_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.70){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_70_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_70_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_70_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_70_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.75){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_75_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_75_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_75_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_75_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.80){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_80_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_80_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_80_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_80_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.85){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_85_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_85_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_85_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_85_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.90){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _3B_POLAR_CUTOFF_90_VAR_64;
+                break;
+            case 1:
+                currCutoff = _3B_POLAR_CUTOFF_90_VAR_32;
+                break;
+            case 2:
+                currCutoff = _3B_POLAR_CUTOFF_90_VAR_16;
+                break;
+            case 3:
+                currCutoff = _3B_POLAR_CUTOFF_90_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else{
+        cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+        cout << typeid(iagoEarlySkipIntegral).name() << endl;
+    }
+    
+    return currCutoff;
+}
+
+float getCurrentCutoffVariance_5BandsPolar(int currDepth){
+    float currCutoff = -1.0;
+    assert(iagoEarlySkipIntegral[0]!=0.0);
+    
+    if(iagoEarlySkipIntegral[0] == 0.50){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_50_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_50_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_50_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_50_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.55){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_55_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_55_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_55_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_55_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.60){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_60_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_60_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_60_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_60_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.65){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_65_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_65_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_65_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_65_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.70){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_70_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_70_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_70_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_70_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.75){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_75_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_75_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_75_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_75_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.80){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_80_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_80_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_80_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_80_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.85){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_85_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_85_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_85_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_85_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[0] == 0.90){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_POLAR_CUTOFF_90_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_POLAR_CUTOFF_90_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_POLAR_CUTOFF_90_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_POLAR_CUTOFF_90_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else{
+        cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+    }
+    
+    return currCutoff;
+}
+
+
+float getCurrentCutoffVariance_5BandsMidPolar(int currDepth){
+    float currCutoff = -1.0;
+    assert(iagoEarlySkipIntegral[1]!=0.0);
+    
+    if(iagoEarlySkipIntegral[1] == 0.50){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_50_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_50_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_50_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_50_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.55){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_55_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_55_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_55_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_55_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.60){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_60_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_60_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_60_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_60_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.65){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_65_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_65_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_65_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_65_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.70){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_70_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_70_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_70_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_70_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.75){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_75_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_75_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_75_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_75_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.80){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_80_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_80_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_80_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_80_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.85){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_85_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_85_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_85_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_85_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else if(iagoEarlySkipIntegral[1] == 0.90){
+    // Selects appropriate cutoff variance
+        switch(currDepth){
+            case 0:
+                currCutoff = _5B_MIDPOL_CUTOFF_90_VAR_64;
+                break;
+            case 1:
+                currCutoff = _5B_MIDPOL_CUTOFF_90_VAR_32;
+                break;
+            case 2:
+                currCutoff = _5B_MIDPOL_CUTOFF_90_VAR_16;
+                break;
+            case 3:
+                currCutoff = _5B_MIDPOL_CUTOFF_90_VAR_8;
+                break;
+            default:
+                currCutoff = currCutoff;
+                break;
+        }    
+    }
+    else{
+        cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+    }
+    
+    return currCutoff;
+}
+
 // iagostorch end

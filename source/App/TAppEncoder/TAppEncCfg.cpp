@@ -52,6 +52,14 @@
 #define MACRO_TO_STRING_HELPER(val) #val
 #define MACRO_TO_STRING(val) MACRO_TO_STRING_HELPER(val)
 
+// iagostorch begin
+// Encoding parameters used to enable/disable implemented techniques
+extern int iagoEarlySkip;
+extern double *iagoEarlySkipIntegral;
+extern double *iagoBandsDistribution;
+extern int iagoNdivisions;
+// iagostorch end
+
 using namespace std;
 namespace po = df::program_options_lite;
 
@@ -683,6 +691,11 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   SMultiValueInput<Int>  cfg_timeCodeSeiTimeOffsetValue      (std::numeric_limits<Int>::min(), std::numeric_limits<Int>::max(), 0, MAX_TIMECODE_SEI_SETS);
   Int warnUnknowParameter = 0;
 
+  // iagostorch begin
+  // Multi-value input fields:                                // minval, maxval (incl), min_entries, max_entries (incl) [, default values, number of default values]
+  SMultiValueInput<Double> iagoBandsDistribution_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Double> iagoEarlySkipIntegral_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  // iagostorch end
   po::Options opts;
   opts.addOptions()
   ("help",                                            do_help,                                          false, "this help text")
@@ -690,6 +703,13 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   ("WarnUnknowParameter,w",                           warnUnknowParameter,                                  0, "warn for unknown configuration parameters instead of failing")
 
   // File, I/O and source parameters
+  // iagostorch begin
+  ("IagoEarlySkip",                                   iagoEarlySkip,                                        0, "Enable the Early Skip technique based on block variance")
+  ("IagoEarlySkipIntegral",                  iagoEarlySkipIntegral_cfg,             iagoEarlySkipIntegral_cfg, "Control the variance threshold for early skip")
+  
+  ("IagoBandsDistribution",                  iagoBandsDistribution_cfg,             iagoBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order")
+  
+  // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
   ("ReconFile,o",                                     m_reconFileName,                             string(""), "Reconstructed YUV output file name")
@@ -1149,6 +1169,28 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
     m_framesToBeEncoded *= 2;
   }
 
+  // iagostorch begin
+  
+  if(iagoBandsDistribution_cfg.values.size() > 0 ){
+      int nElements = iagoBandsDistribution_cfg.values.size();
+      
+      assert((nElements == 2) or (nElements == 4));
+      assert((iagoEarlySkipIntegral_cfg.values.size() == nElements/2)); // Guarantees that there is one threshold for each pair of bands
+      
+      iagoNdivisions = nElements;
+          
+      iagoBandsDistribution = (double *) malloc(nElements * sizeof(double));
+      iagoEarlySkipIntegral = (double *) malloc(nElements/2 * sizeof(double));
+      
+      int el;
+      for(el=0; el<nElements; el++)
+          iagoBandsDistribution[el] = iagoBandsDistribution_cfg.values[el];
+      for(el=0; el<nElements/2; el++)
+          iagoEarlySkipIntegral[el] = iagoEarlySkipIntegral_cfg.values[el];
+  }
+  
+  //iagostorch end
+  
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
     if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)

@@ -49,6 +49,13 @@ Int extractOnlyRasterPUs = 1;
 Int extractTZInfo = 1;
 Int extractFinalCuInfo = 1;
 Int extractIntermediateCuInfo = 1;
+Int** samplesMatrix; // Used to store the samples value for future variancecalculation
+
+int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
+double *iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip in each band
+double *iagoBandsDistribution; // Custom encoding parameter. Controle the size of each band
+int iagoNdivisions;
+int iagoIs10bitsVideo = 0;    // Detects if video is 10 bits. If it is 10 bits, it must be converted to 8 bits to employ the same variance cutoff
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
@@ -68,6 +75,7 @@ double unipredTime = 0.0;
 double bipredTime = 0.0;
 double motionCompTime = 0.0;
 double fmeTime = 0.0;
+double varTime = 0.0;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -150,6 +158,7 @@ int main(int argc, char* argv[])
   cout << endl;
   cout << "checkIntraTime:  " << checkIntraTime << endl;
   cout << "checkInterTime:  " << checkInterTime << endl;
+  cout << "calcVarTime: " << varTime << endl; 
   
   cout << "|predInterSearchTime:  " << predInterSearchTime << endl;
   cout << "||xMotionEstimationTime:  " << xMotionEstimationTime << endl;
@@ -163,7 +172,7 @@ int main(int argc, char* argv[])
   cout << "|||FME:  " << fmeTime << endl;
   cout << "|calcRdInter: " << calcRdInter << endl; 
   cout << "|checkBestModeInter: " << checkBestModeInter << endl; 
-  
+   
 // iagostorch end 
  
   // destroy application encoder class

@@ -39,6 +39,14 @@
 #include "TEncSlice.h"
 #include <math.h>
 
+// iagostorch begin
+
+Int** extractLumaSamples(TComPic* pcPic); // Used to extract the samples and save them in samplesMatrix
+extern Int** samplesMatrix;
+extern int iagoIs10bitsVideo;
+
+// iagostorch end
+
 //! \ingroup TLibEncoder
 //! \{
 
@@ -700,6 +708,11 @@ Void TEncSlice::compressSlice( TComPic* pcPic, const Bool bCompressEntireSlice, 
   // if bCompressEntireSlice is true, then the entire slice (not slice segment) is compressed,
   //   effectively disabling the slice-segment-mode.
 
+  // iagostorch begin
+  // Extract luma sample values from pcPic into global variable samplesMatrix for future use
+  samplesMatrix = extractLumaSamples(pcPic);
+  // iagostorch end
+  
   UInt   startCtuTsAddr;
   UInt   boundingCtuTsAddr;
   TComSlice* const pcSlice            = pcPic->getSlice(getSliceIdx());
@@ -1299,4 +1312,64 @@ Double TEncSlice::xGetQPValueAccordingToLambda ( Double lambda )
   return 4.2005*log(lambda) + 13.7122;
 }
 
+// iagostorch begin
+// Following function was inherited from Cauane
+// It extracts the luma sample values from current pcPic into a global variable
+// to be used in the future
+Int** extractLumaSamples(TComPic* pcPic){
+    UInt stride = pcPic->getPicYuvTrueOrg()->getStride(COMPONENT_Y);     //pixels are organized in a row vector, this is the step per CU   
+    Pel* pxlsPerCu = pcPic->getPicYuvTrueOrg()->getAddr(COMPONENT_Y, 0); //pixels in first CU
+    Int** pixelMtx;
+    Int w=0, h=0;
+    
+    //initialize pixelMtx
+    pixelMtx = new Int*[pcPic->getFrameHeightInCtus()*64];
+
+    for(int k=0; k<pcPic->getFrameHeightInCtus()*64; ++k)
+        pixelMtx[k] = new Int[pcPic->getFrameWidthInCtus()*64]; 
+    
+    //access all frame CUs
+    for(int l = 0; l < pcPic->getNumberOfCtusInFrame(); l++){
+        pxlsPerCu = pcPic->getPicYuvTrueOrg()->getAddr(COMPONENT_Y, l);
+        //iterate inside the 64x64 CU pixels
+        for( int y = 0; y < 64; y++ ){
+            for( int x = 0; x < 64; x++ ){  
+                
+                // if video is in 10 bits format, we convert it to 8 bits to 
+                // employ the same variance cutoff threshold when encoding
+                // any video
+                if(iagoIs10bitsVideo){
+                    pixelMtx[y+h][x+w] = (pxlsPerCu[x] >> 2);
+                }
+                else{
+                    pixelMtx[y+h][x+w] = pxlsPerCu[x];
+                }
+            }
+        //increment the step    
+        pxlsPerCu += stride;
+        }
+        
+        //assess the pixelMtx index based on the picture height and width
+        if(w+64 == pcPic->getPicYuvTrueOrg()->getWidth(COMPONENT_Y)){
+            h += 64;
+            w = 0;
+        }
+        else
+            w += 64;
+    }
+    
+    //tests if the height of the picture isn't divisible by 64 (copy the last X rows to the rest of the picture) Class B: 1920x1088!
+    if(pcPic->getFrameHeightInCtus()*64-pcPic->getPicYuvTrueOrg()->getHeight(COMPONENT_Y) > 0){
+        //pick the number of rows to be copied
+        Int cpRowIdx = pcPic->getFrameHeightInCtus()*64-pcPic->getPicYuvTrueOrg()->getHeight(COMPONENT_Y);
+        for(int i=pcPic->getPicYuvTrueOrg()->getHeight(COMPONENT_Y)-cpRowIdx; i<pcPic->getPicYuvTrueOrg()->getHeight(COMPONENT_Y); i++){
+            for(int j=0; j<pcPic->getPicYuvTrueOrg()->getWidth(COMPONENT_Y); j++){
+                pixelMtx[i+cpRowIdx][j] = pixelMtx[i][j];
+            }
+        }
+    }
+    
+    return pixelMtx;
+}
+// iagostorch end
 //! \}
