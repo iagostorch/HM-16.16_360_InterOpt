@@ -111,9 +111,17 @@ inline Int64 abs (Int64 x) { return _abs64(x); };
 // ====================================================================================================================
 // iagostorch constants
 // ====================================================================================================================
-static const float UPPER_BAND = 0.25;
-static const float LOWER_BAND = 0.75;
 
+// FME reduction constants
+static const Int VERTICAL_FME =     0;
+static const Int HORIZONTAL_FME =   1;
+static const Int DIRECTIONS_FME =   2;
+
+static const Int INTEGER_PEL =      0;
+static const Int HALF_PEL =         1;
+static const Int QUARTER_PEL =      2;
+static const Int RESOLUTIONS_PEL =  3;
+        
 // Cutoff variance for POLAR regions in 3 BANDS system
 // 50% of skips occur in CUs with variance lower than these tresholds
 static const float _3B_POLAR_CUTOFF_50_VAR_64 = 80.0;

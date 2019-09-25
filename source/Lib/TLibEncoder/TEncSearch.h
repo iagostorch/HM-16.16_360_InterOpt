@@ -144,7 +144,23 @@ protected:
                                   TComMv baseRefMv,
                                   Int iFrac, TComMv& rcMvFrac, Bool bAllowUseOfHadamard
                                  );
+// iagostorch begin
+  void getFmeSchedule(  TComDataCU* pcCU, 
+                                    Int* fmeSchedule
+                                    );
 
+  
+  
+  Distortion  xPatternRefinement_Vertical( TComPattern* pcPatternKey,
+                                  TComMv baseRefMv,
+                                  Int iFrac, TComMv& rcMvFrac, Bool bAllowUseOfHadamard
+                                 );
+
+  Distortion  xPatternRefinement_Horizontal( TComPattern* pcPatternKey,
+                                  TComMv baseRefMv,
+                                  Int iFrac, TComMv& rcMvFrac, Bool bAllowUseOfHadamard
+                                 );
+  // iagostorch end
   typedef struct
   {
     const Pel*  piRefY;
@@ -427,6 +443,22 @@ protected:
                                     TComMv&      rcMvQter,
                                     Distortion&  ruiCost
                                    );
+  
+  // iagostorch begin
+  
+  Void xPatternSearchFracDIF_adaptive(
+                                    Bool         bIsLosslessCoded,
+                                    TComPattern* pcPatternKey,
+                                    Pel*         piRefY,
+                                    Int          iRefStride,
+                                    TComMv*      pcMvInt,
+                                    TComMv&      rcMvHalf,
+                                    TComMv&      rcMvQter,
+                                    Distortion&  ruiCost,
+                                    Int*         parametersFME
+                                   );
+  
+  // iagostorch end
 
   Void xExtDIFUpSamplingH( TComPattern* pcPattern );
   Void xExtDIFUpSamplingQ( TComPattern* pcPatternKey, TComMv halfPelRef );

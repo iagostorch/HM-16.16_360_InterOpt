@@ -42,20 +42,30 @@
 #include "TAppCommon/program_options_lite.h"
 
 // iagostorch begin
-ofstream mvFile;
-ofstream finalCuInfo;
-ofstream intermediateCuInfo;
-Int extractOnlyRasterPUs = 1;
-Int extractTZInfo = 1;
-Int extractFinalCuInfo = 1;
-Int extractIntermediateCuInfo = 1;
-Int** samplesMatrix; // Used to store the samples value for future variancecalculation
-
+// Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
 double *iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip in each band
 double *iagoEarlySkipBandsDistribution; // Custom encoding parameter. Controle the size of each band
 int iagoEarlySkipNdivisions;
 int iagoIs10bitsVideo = 0; // Detects if video is 10 bits. If it is 10 bits, it must be converted to 8 bits to employ the same variance cutoff
+Int** samplesMatrix; // Used to store the samples value for future variance calculation
+
+// Variables to control reduced FME schedule
+int iagoReducedFME;
+int iagoReducedFMENdivisions;
+double *iagoReducedFMEBandsDistribution;
+Int *iagoReducedFMEBandsHorizontalPrecision;
+Int *iagoReducedFMEBandsVerticalPrecision;
+
+ofstream mvFile;
+ofstream finalCuInfo;
+ofstream intermediateCuInfo;
+
+Int extractOnlyRasterPUs = 0;
+Int extractTZInfo = 0;
+Int extractFinalCuInfo = 0;
+Int extractIntermediateCuInfo = 0;
+
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
@@ -76,6 +86,8 @@ double bipredTime = 0.0;
 double motionCompTime = 0.0;
 double fmeTime = 0.0;
 double varTime = 0.0;
+double halfGenTime = 0.0;
+double quartGenTime = 0.0;
 // iagostorch end
 
 //! \ingroup TAppEncoder
@@ -165,6 +177,8 @@ int main(int argc, char* argv[]) {
     cout << "|||||refinTime: " << refinTime << endl;
     cout << "|||xPatternSearchTime:  " << xPatternSearchTime << endl;
     cout << "|||FME:  " << fmeTime << endl;
+    cout << "||||halfGenTime:  " << halfGenTime << endl;
+    cout << "||||quartGenTime:  " << quartGenTime << endl;
     cout << "|calcRdInter: " << calcRdInter << endl;
     cout << "|checkBestModeInter: " << checkBestModeInter << endl;
 

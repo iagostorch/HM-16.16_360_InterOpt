@@ -51,13 +51,19 @@
 #endif
 
 // iagostorch begin
-
+// Encoding parameters to control Early Skip technique
 extern int iagoEarlySkip;
 extern double *iagoEarlySkipIntegral;
 extern double *iagoEarlySkipBandsDistribution;
 extern int iagoEarlySkipNdivisions;
 extern int iagoIs10bitsVideo;
 
+// Encoding parameters to control reduced FME schedule
+extern int iagoReducedFME;
+extern int iagoReducedFMENdivisions;
+extern double *iagoReducedFMEBandsDistribution;;
+extern Int *iagoReducedFMEBandsHorizontalPrecision;
+extern Int *iagoReducedFMEBandsVerticalPrecision;
 // iagostorch end
 
 using namespace std;
@@ -512,14 +518,27 @@ Void TAppEncTop::encode()
   printChromaFormat();
 
   // iagostorch begin
+  // Summary of custom encoding parameters
   printf("\n###############################################\n");
   printf("Iago Storch custom encoding parameters:\n");
   printf("\tEarly Skip:          %d\n", iagoEarlySkip);
-  printf("\tNumber of bands:     %d\n", iagoEarlySkipNdivisions+1);
-    cout<<"\tBands Distribution:  "; for(int i = 0; i<iagoEarlySkipNdivisions; i++) cout << iagoEarlySkipBandsDistribution[i] << ", ";
-  cout << endl;
-  cout <<"\tEarly Skip Integral: "; for(int i=0; i<iagoEarlySkipNdivisions/2; i++) cout << iagoEarlySkipIntegral[i] << ", " ;
-  cout << endl;
+  if(iagoEarlySkip){
+    printf("\t\tNumber of bands:     %d\n", iagoEarlySkipNdivisions+1);
+    cout<<"\t\tBands Distribution:  "; for(int i = 0; i<iagoEarlySkipNdivisions; i++) cout << iagoEarlySkipBandsDistribution[i] << ", ";
+    cout << endl;
+    cout <<"\t\tEarly Skip Integral: "; for(int i=0; i<iagoEarlySkipNdivisions/2; i++) cout << iagoEarlySkipIntegral[i] << ", " ;
+    cout << endl;
+  }
+  if(iagoReducedFME){
+    printf("\tReduced FME:          %d\n", iagoReducedFME);
+    printf("\t\tNumber of bands:      %d\n", iagoReducedFMENdivisions+1);
+    cout<<("\t\tBands distribution:   "); for(int el=0;el<iagoReducedFMENdivisions;el++) cout << iagoReducedFMEBandsDistribution[el] << ", ";
+    cout << endl;
+    cout<<("\t\tBands Hori Precision: "); for(int el=0;el<iagoReducedFMENdivisions/2;el++) cout << iagoReducedFMEBandsHorizontalPrecision[el] << ", ";
+    cout << endl;
+    cout<<("\t\tBands Vert Precision: "); for(int el=0;el<iagoReducedFMENdivisions/2;el++) cout << iagoReducedFMEBandsVerticalPrecision[el] << ", ";
+    cout << endl;  
+  }
   printf("###############################################\n\n\n");
   // iagostorch end
   // main encoder loop

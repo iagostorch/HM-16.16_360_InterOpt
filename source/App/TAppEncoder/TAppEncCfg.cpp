@@ -53,11 +53,18 @@
 #define MACRO_TO_STRING(val) MACRO_TO_STRING_HELPER(val)
 
 // iagostorch begin
-// Encoding parameters used to enable/disable implemented techniques
+// Encoding parameters used to enable/disable Early Skip
 extern int iagoEarlySkip;
 extern double *iagoEarlySkipIntegral;
 extern double *iagoEarlySkipBandsDistribution;
 extern int iagoEarlySkipNdivisions;
+
+// Encoding parameters used to control reduced FME schedule
+extern int iagoReducedFME;
+extern double *iagoReducedFMEBandsDistribution;
+extern Int *iagoReducedFMEBandsHorizontalPrecision;
+extern Int *iagoReducedFMEBandsVerticalPrecision;
+extern int iagoReducedFMENdivisions;
 // iagostorch end
 
 using namespace std;
@@ -693,10 +700,14 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
 
   // iagostorch begin
   // Multi-value input fields:                                // minval, maxval (incl), min_entries, max_entries (incl) [, default values, number of default values]
-  SMultiValueInput<Double> iagoBandsDistribution_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Double> iagoEarlySkipBandsDistribution_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
   SMultiValueInput<Double> iagoEarlySkipIntegral_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Double> iagoReducedFMEBandsDistribution_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Int> iagoReducedFMEBandsHorizontalPrecision_cfg           (0, std::numeric_limits<Int>::max(), 0, std::numeric_limits<Int>::max());
+  SMultiValueInput<Int> iagoReducedFMEBandsVerticalPrecision_cfg           (0, std::numeric_limits<Int>::max(), 0, std::numeric_limits<Int>::max());
+  
   // iagostorch end
-  po::Options opts;
+    po::Options opts;
   opts.addOptions()
   ("help",                                            do_help,                                          false, "this help text")
   ("c",    po::parseConfigFile, "configuration file name")
@@ -704,11 +715,15 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
 
   // File, I/O and source parameters
   // iagostorch begin
+  // Encoding parameters for Early Skip technique
   ("IagoEarlySkip",                                   iagoEarlySkip,                                        0, "Enable the Early Skip technique based on block variance")
-  ("IagoEarlySkipIntegral",                  iagoEarlySkipIntegral_cfg,             iagoEarlySkipIntegral_cfg, "Control the variance threshold for early skip")
-  
-  ("IagoBandsDistribution",                  iagoBandsDistribution_cfg,             iagoBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order")
-  
+  ("IagoEarlySkipIntegral",                           iagoEarlySkipIntegral_cfg,             iagoEarlySkipIntegral_cfg, "Control the variance threshold for early skip")
+  ("IagoEarlySkipBandsDistribution",                  iagoEarlySkipBandsDistribution_cfg,             iagoEarlySkipBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order, for the Early Skip technique")
+  // Encoding parameters for Reduced FME technique
+  ("IagoReducedFME",                                  iagoReducedFME,                                       0, "Enable fast FME algorithm. The FME is performed with smaller precision for some blocks")
+  ("IagoReducedFMEBandsDistribution",                 iagoReducedFMEBandsDistribution_cfg,    iagoReducedFMEBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order, for the Reduced FME technique")
+  ("IagoReducedFMEBandsHorizontalPrecision",          iagoReducedFMEBandsHorizontalPrecision_cfg,          iagoReducedFMEBandsHorizontalPrecision_cfg, "Array containing the motion estimation horizontal precision for each band, in a top-bottom order")
+  ("IagoReducedFMEBandsVerticalPrecision",            iagoReducedFMEBandsVerticalPrecision_cfg,            iagoReducedFMEBandsVerticalPrecision_cfg,   "Array containing the motion estimation vertical precision for each band, in a top-bottom order")
   // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
@@ -1170,9 +1185,9 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   }
 
   // iagostorch begin
-  
-  if(iagoBandsDistribution_cfg.values.size() > 0 ){
-      int nElements = iagoBandsDistribution_cfg.values.size();
+ // Parse encoding parameters and fill array for bands distribution and Early Skip integral values
+  if(iagoEarlySkipBandsDistribution_cfg.values.size() > 0 ){
+      int nElements = iagoEarlySkipBandsDistribution_cfg.values.size();
       
       assert((nElements == 2) or (nElements == 4));
       assert((iagoEarlySkipIntegral_cfg.values.size() == nElements/2)); // Guarantees that there is one threshold for each pair of bands
@@ -1184,13 +1199,33 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
       
       int el;
       for(el=0; el<nElements; el++)
-          iagoEarlySkipBandsDistribution[el] = iagoBandsDistribution_cfg.values[el];
+          iagoEarlySkipBandsDistribution[el] = iagoEarlySkipBandsDistribution_cfg.values[el];
       for(el=0; el<nElements/2; el++)
           iagoEarlySkipIntegral[el] = iagoEarlySkipIntegral_cfg.values[el];
   }
-  
-  //iagostorch end
-  
+
+  // Parse encoding parameters and fill array for bands distribution and FME precision in each band
+  if(iagoReducedFMEBandsDistribution_cfg.values.size() > 0){ // A specific bands distribution was provided in the encoding
+      
+      int nElements = iagoReducedFMEBandsDistribution_cfg.values.size();
+      assert((nElements == 2) or (nElements == 4));                             // there should be either 3 or 5 bands (2 ou 4 divisions)
+      assert(iagoReducedFMEBandsHorizontalPrecision_cfg.values.size() == nElements/2);    // there should be one precision for each pair of bands
+      assert(iagoReducedFMEBandsVerticalPrecision_cfg.values.size() == nElements/2);
+            
+      iagoReducedFMENdivisions = nElements;
+      
+      iagoReducedFMEBandsDistribution = (double *) malloc(nElements * sizeof(double));
+      iagoReducedFMEBandsHorizontalPrecision = (Int *) malloc(nElements * sizeof(Int));
+      iagoReducedFMEBandsVerticalPrecision = (Int *) malloc(nElements * sizeof(Int));
+      
+      // copy parsed parameters to control variables
+      for(int el = 0; el < nElements; el++){
+          iagoReducedFMEBandsDistribution[el] = iagoReducedFMEBandsDistribution_cfg.values[el];
+          iagoReducedFMEBandsHorizontalPrecision[el] = iagoReducedFMEBandsHorizontalPrecision_cfg.values[el];
+          iagoReducedFMEBandsVerticalPrecision[el] = iagoReducedFMEBandsVerticalPrecision_cfg.values[el];
+      }   
+  }
+  // iagostorch end
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
     if (cfg_ColumnWidth.values.size() > m_numTileColumnsMinus1)
