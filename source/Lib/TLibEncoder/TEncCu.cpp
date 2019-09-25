@@ -45,6 +45,27 @@
 #include <algorithm>
 using namespace std;
 
+// iagostorch begin
+
+#include <sys/time.h>
+
+// Variables to track execution time of some encoding steps
+struct timeval  tv3, tv4;
+struct timeval  tv5, tv6;
+struct timeval  tv15, tv16;
+struct timeval  tv23, tv24;
+extern double checkInterTime;
+extern double predInterSearchTime;
+extern double checkIntraTime;
+extern double calcRdInter;
+extern double checkBestModeInter;
+
+void writeIntermediateCU(TComDataCU *CU);//{
+
+extern Int extractIntermediateCuInfo;
+extern ofstream intermediateCuInfo;
+
+// iagostorch end
 
 //! \ingroup TLibEncoder
 //! \{
@@ -436,7 +457,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
 #else
 Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const UInt uiDepth )
 #endif
-{
+{    
   TComPic* pcPic = rpcBestCU->getPic();
   DEBUG_STRING_NEW(sDebug)
   const TComPPS &pps=*(rpcTempCU->getSlice()->getPPS());
@@ -547,8 +568,12 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
       {
         // 2Nx2N
         if(m_pcEncCfg->getUseEarlySkipDetection())
-        {
+        { 
+          gettimeofday(&tv3, NULL); // iagostorch
           xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug) );
+          gettimeofday(&tv4, NULL); // iagostorch
+          checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
+
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );//by Competition for inter_2Nx2N
         }
         // SKIP
@@ -558,7 +583,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         if(!m_pcEncCfg->getUseEarlySkipDetection())
         {
           // 2Nx2N, NxN
+          gettimeofday(&tv3, NULL);   // iagostorch
           xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug) );
+          gettimeofday(&tv4, NULL); // iagostorch
+          checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
           if(m_pcEncCfg->getUseCbfFastMode())
           {
@@ -595,14 +623,20 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           {
             if( uiDepth == sps.getLog2DiffMaxMinCodingBlockSize() && doNotBlockPu)
             {
+              gettimeofday(&tv3, NULL); // iagostorch
               xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_NxN DEBUG_STRING_PASS_INTO(sDebug)   );
+              gettimeofday(&tv4, NULL); // iagostorch
+              checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
               rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             }
           }
 
           if(doNotBlockPu)
           {
+            gettimeofday(&tv3, NULL); // iagostorch
             xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_Nx2N DEBUG_STRING_PASS_INTO(sDebug)  );
+            gettimeofday(&tv4, NULL); // iagostorch
+            checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
             rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_Nx2N )
             {
@@ -611,7 +645,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           }
           if(doNotBlockPu)
           {
+            gettimeofday(&tv3, NULL); // iagostorch
             xCheckRDCostInter      ( rpcBestCU, rpcTempCU, SIZE_2NxN DEBUG_STRING_PASS_INTO(sDebug)  );
+            gettimeofday(&tv4, NULL); // iagostorch
+            checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
             rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxN)
             {
@@ -638,7 +675,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnU )
                 {
@@ -647,7 +687,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnD DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnD )
                 {
@@ -660,7 +703,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnU DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnU )
                 {
@@ -669,7 +715,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_2NxnD DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_2NxnD )
                 {
@@ -684,7 +733,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_nLx2N )
                 {
@@ -693,7 +745,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug) );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
               }
             }
@@ -702,7 +757,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             {
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nLx2N DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
                 if(m_pcEncCfg->getUseCbfFastMode() && rpcBestCU->getPartitionSize(0) == SIZE_nLx2N )
                 {
@@ -711,7 +769,10 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               }
               if(doNotBlockPu)
               {
+                gettimeofday(&tv3, NULL); // iagostorch
                 xCheckRDCostInter( rpcBestCU, rpcTempCU, SIZE_nRx2N DEBUG_STRING_PASS_INTO(sDebug), true );
+                gettimeofday(&tv4, NULL); // iagostorch
+                checkInterTime += (double) (tv4.tv_usec - tv3.tv_usec)/1000000 + (double) (tv4.tv_sec - tv3.tv_sec); // iagostorch
                 rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
               }
             }
@@ -741,13 +802,19 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
              ((rpcBestCU->getCbf( 0, COMPONENT_Cr ) != 0) && (numberValidComponents > COMPONENT_Cr))  // avoid very complex intra if it is unlikely
             )))
         {
+          gettimeofday(&tv15, NULL); // iagostorch
           xCheckRDCostIntra( rpcBestCU, rpcTempCU, SIZE_2Nx2N DEBUG_STRING_PASS_INTO(sDebug) );
+          gettimeofday(&tv16, NULL); // iagostorch
+          checkIntraTime += (double) (tv16.tv_usec - tv15.tv_usec)/1000000 + (double) (tv16.tv_sec - tv15.tv_sec); // iagostorch
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
           if( uiDepth == sps.getLog2DiffMaxMinCodingBlockSize() )
           {
             if( rpcTempCU->getWidth(0) > ( 1 << sps.getQuadtreeTULog2MinSize() ) )
             {
+              gettimeofday(&tv15, NULL); // iagostorch
               xCheckRDCostIntra( rpcBestCU, rpcTempCU, SIZE_NxN DEBUG_STRING_PASS_INTO(sDebug)   );
+              gettimeofday(&tv16, NULL); // iagostorch
+              checkIntraTime += (double) (tv16.tv_usec - tv15.tv_usec)/1000000 + (double) (tv16.tv_sec - tv15.tv_sec); // iagostorch
               rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             }
           }
@@ -786,6 +853,12 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
     }
   }
 
+  // iagostorch begin
+  // Here we have evaluated all PU formats for current CU
+  if(extractIntermediateCuInfo)
+      writeIntermediateCU(rpcBestCU);
+  // iagostorch end
+  
   // copy original YUV samples to PCM buffer
   if( rpcBestCU->getTotalCost()!=MAX_DOUBLE && rpcBestCU->isLosslessCoded(0) && (rpcBestCU->getIPCMFlag(0) == false))
   {
@@ -1435,7 +1508,11 @@ Void TEncCu::xCheckRDCostInter( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, 
 
 #if AMP_MRG
   rpcTempCU->setMergeAMP (true);
+  gettimeofday(&tv5, NULL); // iagostorch
   m_pcPredSearch->predInterSearch ( rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcRecoYuvTemp[uhDepth] DEBUG_STRING_PASS_INTO(sTest), false, bUseMRG );
+  gettimeofday(&tv6, NULL); // iagostorch
+  predInterSearchTime += (double) (tv6.tv_usec - tv5.tv_usec)/1000000 + (double) (tv6.tv_sec - tv5.tv_sec); // iagostorch
+  
 #else
   m_pcPredSearch->predInterSearch ( rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcRecoYuvTemp[uhDepth] );
 #endif
@@ -1446,16 +1523,22 @@ Void TEncCu::xCheckRDCostInter( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, 
     return;
   }
 #endif
-
+  
+  gettimeofday(&tv23, NULL); // iagostorch
   m_pcPredSearch->encodeResAndCalcRdInterCU( rpcTempCU, m_ppcOrigYuv[uhDepth], m_ppcPredYuvTemp[uhDepth], m_ppcResiYuvTemp[uhDepth], m_ppcResiYuvBest[uhDepth], m_ppcRecoYuvTemp[uhDepth], false DEBUG_STRING_PASS_INTO(sTest) );
   rpcTempCU->getTotalCost()  = m_pcRdCost->calcRdCost( rpcTempCU->getTotalBits(), rpcTempCU->getTotalDistortion() );
+  gettimeofday(&tv24, NULL); // iagostorch
+  calcRdInter += (double) (tv24.tv_usec - tv23.tv_usec)/1000000 + (double) (tv24.tv_sec - tv23.tv_sec); // iagostorch
 
 #if DEBUG_STRING
   DebugInterPredResiReco(sTest, *(m_ppcPredYuvTemp[uhDepth]), *(m_ppcResiYuvBest[uhDepth]), *(m_ppcRecoYuvTemp[uhDepth]), DebugStringGetPredModeMask(rpcTempCU->getPredictionMode(0)));
 #endif
 
+  gettimeofday(&tv23, NULL); // iagostorch
   xCheckDQP( rpcTempCU );
   xCheckBestMode(rpcBestCU, rpcTempCU, uhDepth DEBUG_STRING_PASS_INTO(sDebug) DEBUG_STRING_PASS_INTO(sTest));
+  gettimeofday(&tv24, NULL); // iagostorch
+  checkBestModeInter += (double) (tv24.tv_usec - tv23.tv_usec)/1000000 + (double) (tv24.tv_sec - tv23.tv_sec); // iagostorch
 }
 
 Void TEncCu::xCheckRDCostIntra( TComDataCU *&rpcBestCU,
@@ -1780,3 +1863,142 @@ Void TEncCu::xCtuCollectARLStats(TComDataCU* pCtu )
 }
 #endif
 //! \}
+
+// iagostorch begin
+
+void writeIntermediateCU(TComDataCU *CU){
+    int i=0, lenght=0, totalSize;
+    int *depth, *predMode, *partSize;
+    int pu0=0, pu1=1;//, pu2=2, pu3=3;
+    int maxPUsInCU = 4;
+    
+    totalSize = CU->getTotalNumPart();
+    
+    depth = (int *) malloc(sizeof(int) * totalSize);
+    predMode = (int *) malloc(sizeof(int) * totalSize);
+    partSize = (int *) malloc(sizeof(int) * totalSize);
+    
+    TComMv mvs[totalSize][NUM_REF_PIC_LIST_01][maxPUsInCU];
+    int mergeFlag[totalSize][maxPUsInCU];
+    int skipFlag[totalSize][maxPUsInCU];
+    
+    int refIdx[totalSize][NUM_REF_PIC_LIST_01][maxPUsInCU];
+    
+    TComCUMvField *cuMvRef0 = CU->getCUMvField(REF_PIC_LIST_0);
+    TComCUMvField *cuMvRef1 = CU->getCUMvField(REF_PIC_LIST_1);
+    
+//    int targetCTU = 0;
+   
+    // This if is used if interested in extracting informatin from a specific CTU
+//    if((CTU->getCtuRsAddr()>=targetCTU) && CTU->getPic()->getPOC()>=1){
+    //extracts the data and saves in array        
+    while(i < totalSize){
+        depth[lenght] = (int) CU->getDepth(i);
+        predMode[lenght] = (int) CU->getPredictionMode(i);
+        partSize[lenght] = (int) CU->getPartitionSize(i);
+        
+        if(partSize[lenght] == SIZE_2Nx2N){ // There is only one PU in this CU
+            //   CU       Ref Frame     PU
+            mvs[lenght][REF_PIC_LIST_0][pu0] = cuMvRef0->getMv(i);
+            mvs[lenght][REF_PIC_LIST_1][pu0] = cuMvRef1->getMv(i);
+            refIdx[lenght][REF_PIC_LIST_0][pu0] = cuMvRef0->getRefIdx(i);
+            refIdx[lenght][REF_PIC_LIST_1][pu0] = cuMvRef1->getRefIdx(i);            
+            mergeFlag[lenght][pu0] = CU->getMergeFlag(i);
+            skipFlag[lenght][pu0] = CU->getSkipFlag(i);
+        }
+        else if(partSize[lenght] == SIZE_NxN){ // There are four PUs in this CU
+            i=i;
+        }
+        else if(partSize[lenght] == NUMBER_OF_PART_SIZES){ // In the cae of 1080 videos, in which the last CTU is padded
+            i = i; // just an assignment for the if clause
+        }
+        else{   // There are two PUs in this CU. The MVs are in the first and last sample of the CU
+            //   CU       Ref Frame     PU
+            mvs[lenght][REF_PIC_LIST_0][pu0] = cuMvRef0->getMv(i);
+            mvs[lenght][REF_PIC_LIST_1][pu0] = cuMvRef1->getMv(i);            
+            refIdx[lenght][REF_PIC_LIST_0][pu0] = cuMvRef0->getRefIdx(i);
+            refIdx[lenght][REF_PIC_LIST_1][pu0] = cuMvRef1->getRefIdx(i);   
+            mergeFlag[lenght][pu0] = CU->getMergeFlag(i);
+            skipFlag[lenght][pu0] = CU->getSkipFlag(i);
+            
+            // Stride in indexing is to extract the information from the last sample of current CU, that is, the last PU
+            mvs[lenght][REF_PIC_LIST_0][pu1] = cuMvRef0->getMv(i + ((16>>depth[lenght]) * (16>>depth[lenght])) - 1);
+            mvs[lenght][REF_PIC_LIST_1][pu1] = cuMvRef1->getMv(i + ((16>>depth[lenght]) * (16>>depth[lenght])) - 1);            
+            refIdx[lenght][REF_PIC_LIST_0][pu1] = cuMvRef0->getRefIdx(i + ((16>>depth[lenght]) * (16>>depth[lenght])) - 1);
+            refIdx[lenght][REF_PIC_LIST_1][pu1] = cuMvRef1->getRefIdx(i + ((16>>depth[lenght]) * (16>>depth[lenght])) - 1);            
+            mergeFlag[lenght][pu1] = CU->getMergeFlag(i + ((16>>depth[lenght]) * (16>>depth[lenght])) - 1);
+            skipFlag[lenght][pu1] = CU->getSkipFlag(i + ((16>>depth[lenght]) * (16>>depth[lenght])) - 1);
+        }
+        
+        i = i + ((16>>depth[lenght]) * (16>>depth[lenght]));
+        lenght++;
+    }
+    
+    // SAVES THE INFORMATION INTO FILE
+    for(i=0; i<lenght; i++){
+        // Only extracts motion information if inter CU
+        if(predMode[i] == MODE_INTER){   
+            switch(partSize[i]){
+                case SIZE_2Nx2N:
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2Nx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2Nx2N," << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    break;
+                case SIZE_2NxN:    
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxN " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxN " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2NxN,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2NxN,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    
+                    break;
+                case SIZE_Nx2N:    
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType Nx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType Nx2N " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",Nx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",Nx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    break;
+                case SIZE_NxN:    
+                    cout << "ERROR - The CU was partitioned into 4 iner PUs" << endl;
+                    intermediateCuInfo << "ERROR - The CU was partitioned into 4 iner PUs" << endl;
+                    break;
+                case SIZE_2NxnU:    
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnU " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnU " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2NxnU,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2NxnU,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    break;
+                case SIZE_2NxnD:    
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnD " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType 2NxnD " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2NxnD,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",2NxnD,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    break;
+                case SIZE_nLx2N:    
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nLx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nLx2N " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",nLx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",nLx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    break;
+                case SIZE_nRx2N:    
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nRx2N " << " Idx " << pu0 << " Merge " << mergeFlag[i][pu0] << " Skip " << skipFlag[i][pu0] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu0] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu0] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu0].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl << endl;
+//                    cout << "CTU# " << CTU->getCtuRsAddr() << " " << "Pos " << CTU->getCUPelX() << "x" << CTU->getCUPelY() << " Depth " << depth[i] << "\tType nRx2N " << " Idx " << pu1 << " Merge " << mergeFlag[i][pu1] << " Skip " << skipFlag[i][pu1] << "\tRef0 " << refIdx[i][REF_PIC_LIST_0][pu1] << "\tMV0 " << mvs[i][REF_PIC_LIST_0][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "\tRef1 " << refIdx[i][REF_PIC_LIST_1][pu1] << "\tMV1 " << mvs[i][REF_PIC_LIST_1][pu1].getHor() << " " << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl << endl;
+                    
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",nRx2N,"  << pu0 << "," << mergeFlag[i][pu0] << "," << skipFlag[i][pu0] << "," << refIdx[i][REF_PIC_LIST_0][pu0] << "," << mvs[i][REF_PIC_LIST_0][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu0].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu0] << "," << mvs[i][REF_PIC_LIST_1][pu0].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu0].getVer() << endl;
+                    intermediateCuInfo << CU->getPic()->getPOC() << "," << CU->getCtuRsAddr() << "," << CU->getCUPelX() << "x" << CU->getCUPelY() << "," << depth[i] << ",nRx2N,"  << pu1 << "," << mergeFlag[i][pu1] << "," << skipFlag[i][pu1] << "," << refIdx[i][REF_PIC_LIST_0][pu1] << "," << mvs[i][REF_PIC_LIST_0][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_0][pu1].getVer() << "," << refIdx[i][REF_PIC_LIST_1][pu1] << "," << mvs[i][REF_PIC_LIST_1][pu1].getHor() << "x" << mvs[i][REF_PIC_LIST_1][pu1].getVer() << endl;
+                    break;
+                default:
+                    cout << "ERROR - Incorrect PU type code" << endl;
+                    intermediateCuInfo << "ERROR - Incorrect PU type code" << endl;
+                    break;                       
+            }
+        }
+    }
+//    } // Target CTU if
+    
+}
+// iagostorch end
