@@ -70,8 +70,8 @@ extern double varTime;
 
 extern int iagoEarlySkip; // Custom encoding parameter to enable early skip based on block variance
 extern double *iagoEarlySkipIntegral; // Custom encoding parameter to set variance threshold
-extern int iagoNdivisions;
-extern double *iagoBandsDistribution; // Custom encoding parameter. Controle the size of each band
+extern int iagoEarlySkipNdivisions;
+extern double *iagoEarlySkipBandsDistribution; // Custom encoding parameter. Controle the size of each band
 
 // Header of iagostorch functions
 float calculateVar(TComDataCU* currCU); // Used to calculate variance of current CU
@@ -1935,11 +1935,11 @@ int shouldForceSkip(TComDataCU* currCU){
         int cuHeight = 64 >> (currCU->getDepth(0));
         int absVertPos = currCU->getCUPelY() + cuHeight/2;
         float relativeVertPos = (float) absVertPos/(currCU->getPic()->getFrameHeightInCtus()*64);
-        int nBands = iagoNdivisions+1;
+        int nBands = iagoEarlySkipNdivisions+1;
         
         // If current CU is in polar bands
         if(nBands == 3){
-            if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[1]){
+            if(relativeVertPos <= iagoEarlySkipBandsDistribution[0] or relativeVertPos >= iagoEarlySkipBandsDistribution[1]){
                 currCutoff = getCurrentCutoffVariance_3BandsPolar((int) currCU->getDepth(0));
                 if(currVar <= currCutoff){
                     return 1;
@@ -1947,13 +1947,13 @@ int shouldForceSkip(TComDataCU* currCU){
             }
         }
         else if(nBands == 5){
-            if(relativeVertPos <= iagoBandsDistribution[0] or relativeVertPos >= iagoBandsDistribution[3]){
+            if(relativeVertPos <= iagoEarlySkipBandsDistribution[0] or relativeVertPos >= iagoEarlySkipBandsDistribution[3]){
                 currCutoff = getCurrentCutoffVariance_5BandsPolar((int) currCU->getDepth(0));
                 if(currVar <= currCutoff){
                     return 1;
                 }
             }
-            else if(relativeVertPos <= iagoBandsDistribution[1] or relativeVertPos >= iagoBandsDistribution[2]){
+            else if(relativeVertPos <= iagoEarlySkipBandsDistribution[1] or relativeVertPos >= iagoEarlySkipBandsDistribution[2]){
                 currCutoff = getCurrentCutoffVariance_5BandsMidPolar((int) currCU->getDepth(0));
                 if(currVar <= currCutoff){
                     return 1;

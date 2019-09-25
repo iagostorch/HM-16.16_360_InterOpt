@@ -56,8 +56,8 @@
 // Encoding parameters used to enable/disable implemented techniques
 extern int iagoEarlySkip;
 extern double *iagoEarlySkipIntegral;
-extern double *iagoBandsDistribution;
-extern int iagoNdivisions;
+extern double *iagoEarlySkipBandsDistribution;
+extern int iagoEarlySkipNdivisions;
 // iagostorch end
 
 using namespace std;
@@ -1177,14 +1177,14 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
       assert((nElements == 2) or (nElements == 4));
       assert((iagoEarlySkipIntegral_cfg.values.size() == nElements/2)); // Guarantees that there is one threshold for each pair of bands
       
-      iagoNdivisions = nElements;
+      iagoEarlySkipNdivisions = nElements;
           
-      iagoBandsDistribution = (double *) malloc(nElements * sizeof(double));
+      iagoEarlySkipBandsDistribution = (double *) malloc(nElements * sizeof(double));
       iagoEarlySkipIntegral = (double *) malloc(nElements/2 * sizeof(double));
       
       int el;
       for(el=0; el<nElements; el++)
-          iagoBandsDistribution[el] = iagoBandsDistribution_cfg.values[el];
+          iagoEarlySkipBandsDistribution[el] = iagoBandsDistribution_cfg.values[el];
       for(el=0; el<nElements/2; el++)
           iagoEarlySkipIntegral[el] = iagoEarlySkipIntegral_cfg.values[el];
   }

@@ -33,7 +33,7 @@
 
 /** \file     encmain.cpp
     \brief    Encoder application main
-*/
+ */
 
 #include <time.h>
 #include <iostream>
@@ -53,9 +53,9 @@ Int** samplesMatrix; // Used to store the samples value for future variancecalcu
 
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
 double *iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip in each band
-double *iagoBandsDistribution; // Custom encoding parameter. Controle the size of each band
-int iagoNdivisions;
-int iagoIs10bitsVideo = 0;    // Detects if video is 10 bits. If it is 10 bits, it must be converted to 8 bits to employ the same variance cutoff
+double *iagoEarlySkipBandsDistribution; // Custom encoding parameter. Controle the size of each band
+int iagoEarlySkipNdivisions;
+int iagoIs10bitsVideo = 0; // Detects if video is 10 bits. If it is 10 bits, it must be converted to 8 bits to employ the same variance cutoff
 
 // Variables to track the execution time of some encoding steps
 double rasterTime = 0.0;
@@ -87,112 +87,107 @@ double varTime = 0.0;
 // Main function
 // ====================================================================================================================
 
-int main(int argc, char* argv[])
-{
-  // iagostorch begin
-  if(extractTZInfo){
-    mvFile.open("mvFile.csv");
-    mvFile << "PU,Pos,Size,Pred,Inic,Rast,Refi" << endl;
-  }
-  if(extractFinalCuInfo){
-    finalCuInfo.open("finalPU.csv");
-    finalCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
-  }
-  if(extractIntermediateCuInfo){
-    intermediateCuInfo.open("intermediatePU.csv");
-    intermediateCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
-  }
-  // iagostorch end
-  TAppEncTop  cTAppEncTop;
-
-  // print information
-  fprintf( stdout, "\n" );
-  fprintf( stdout, "HM software: Encoder Version [%s] (including RExt)", NV_VERSION );
-  fprintf( stdout, NVM_ONOS );
-  fprintf( stdout, NVM_COMPILEDBY );
-  fprintf( stdout, NVM_BITS );
-  fprintf( stdout, "\n\n" );
-
-  // create application encoder class
-  cTAppEncTop.create();
-
-  // parse configuration
-  try
-  {
-    if(!cTAppEncTop.parseCfg( argc, argv ))
-    {
-      cTAppEncTop.destroy();
-#if ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
-      EnvVar::printEnvVar();
-#endif
-      return 1;
+int main(int argc, char* argv[]) {
+    // iagostorch begin
+    if (extractTZInfo) {
+        mvFile.open("mvFile.csv");
+        mvFile << "PU,Pos,Size,Pred,Inic,Rast,Refi" << endl;
     }
-  }
-  catch (df::program_options_lite::ParseFailure &e)
-  {
-    std::cerr << "Error parsing option \""<< e.arg <<"\" with argument \""<< e.val <<"\"." << std::endl;
-    return 1;
-  }
-  
+    if (extractFinalCuInfo) {
+        finalCuInfo.open("finalPU.csv");
+        finalCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+    }
+    if (extractIntermediateCuInfo) {
+        intermediateCuInfo.open("intermediatePU.csv");
+        intermediateCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+    }
+    // iagostorch end
+    TAppEncTop cTAppEncTop;
+
+    // print information
+    fprintf(stdout, "\n");
+    fprintf(stdout, "HM software: Encoder Version [%s] (including RExt)", NV_VERSION);
+    fprintf(stdout, NVM_ONOS);
+    fprintf(stdout, NVM_COMPILEDBY);
+    fprintf(stdout, NVM_BITS);
+    fprintf(stdout, "\n\n");
+
+    // create application encoder class
+    cTAppEncTop.create();
+
+    // parse configuration
+    try {
+        if (!cTAppEncTop.parseCfg(argc, argv)) {
+            cTAppEncTop.destroy();
+#if ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
+            EnvVar::printEnvVar();
+#endif
+            return 1;
+        }
+    } catch (df::program_options_lite::ParseFailure &e) {
+        std::cerr << "Error parsing option \"" << e.arg << "\" with argument \"" << e.val << "\"." << std::endl;
+        return 1;
+    }
+
 #if PRINT_MACRO_VALUES
-  printMacroSettings();
+    printMacroSettings();
 #endif
 
 #if ENVIRONMENT_VARIABLE_DEBUG_AND_TEST
-  EnvVar::printEnvVarInUse();
+    EnvVar::printEnvVarInUse();
 #endif
 
-  // starting time
-  Double dResult;
-  clock_t lBefore = clock();
+    // starting time
+    Double dResult;
+    clock_t lBefore = clock();
 
-  // call encoding function
-  cTAppEncTop.encode();
+    // call encoding function
+    cTAppEncTop.encode();
 
-  // ending time
-  dResult = (Double)(clock()-lBefore) / CLOCKS_PER_SEC;
-  printf("\n Total Time: %12.3f sec.\n", dResult);
+    // ending time
+    dResult = (Double) (clock() - lBefore) / CLOCKS_PER_SEC;
+    printf("\n Total Time: %12.3f sec.\n", dResult);
 
-  // iagostorch begin 
-  
-  cout << endl;
-  cout << "checkIntraTime:  " << checkIntraTime << endl;
-  cout << "checkInterTime:  " << checkInterTime << endl;
-  cout << "calcVarTime: " << varTime << endl; 
-  
-  cout << "|predInterSearchTime:  " << predInterSearchTime << endl;
-  cout << "||xMotionEstimationTime:  " << xMotionEstimationTime << endl;
-  cout << "|||xPatternSearchFastTime:  " << xPatternSearchFastTime << endl;
-  cout << "||||xTZSearchTime:  " << xTZSearchTime << endl;
-  cout << "|||||predTime: " << predTime << endl; 
-  cout << "|||||firstTime: " << firstTime << endl; 
-  cout << "|||||rasterTime: " << rasterTime << endl; 
-  cout << "|||||refinTime: " << refinTime << endl; 
-  cout << "|||xPatternSearchTime:  " << xPatternSearchTime << endl;
-  cout << "|||FME:  " << fmeTime << endl;
-  cout << "|calcRdInter: " << calcRdInter << endl; 
-  cout << "|checkBestModeInter: " << checkBestModeInter << endl; 
-   
-// iagostorch end 
- 
-  // destroy application encoder class
-  cTAppEncTop.destroy();
+    // iagostorch begin 
 
-  // iagostorch begin
-  
-  if(extractTZInfo){
-    mvFile.close();
-  }
-  if(extractFinalCuInfo){
-    finalCuInfo.close();
-  }
-  if(extractIntermediateCuInfo){
-    intermediateCuInfo.close();
-  }
-  
-  // iagostorch end
-  
-  return 0;
+    cout << endl;
+    cout << "checkIntraTime:  " << checkIntraTime << endl;
+    cout << "checkInterTime:  " << checkInterTime << endl;
+    cout << "calcVarTime: " << varTime << endl;
+
+    cout << "|predInterSearchTime:  " << predInterSearchTime << endl;
+    cout << "||xMotionEstimationTime:  " << xMotionEstimationTime << endl;
+    cout << "|||xPatternSearchFastTime:  " << xPatternSearchFastTime << endl;
+    cout << "||||xTZSearchTime:  " << xTZSearchTime << endl;
+    cout << "|||||predTime: " << predTime << endl;
+    cout << "|||||firstTime: " << firstTime << endl;
+    cout << "|||||rasterTime: " << rasterTime << endl;
+    cout << "|||||refinTime: " << refinTime << endl;
+    cout << "|||xPatternSearchTime:  " << xPatternSearchTime << endl;
+    cout << "|||FME:  " << fmeTime << endl;
+    cout << "|calcRdInter: " << calcRdInter << endl;
+    cout << "|checkBestModeInter: " << checkBestModeInter << endl;
+
+    // iagostorch end 
+
+    // destroy application encoder class
+    cTAppEncTop.destroy();
+
+    // iagostorch begin
+
+    if (extractTZInfo) {
+        mvFile.close();
+    }
+    if (extractFinalCuInfo) {
+        finalCuInfo.close();
+    }
+    if (extractIntermediateCuInfo) {
+        intermediateCuInfo.close();
+    }
+
+    // iagostorch end
+
+    return 0;
 }
 
 //! \}
