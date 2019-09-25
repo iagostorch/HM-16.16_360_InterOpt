@@ -65,6 +65,13 @@ extern double *iagoReducedFMEBandsDistribution;
 extern Int *iagoReducedFMEBandsHorizontalPrecision;
 extern Int *iagoReducedFMEBandsVerticalPrecision;
 extern int iagoReducedFMENdivisions;
+
+// Variables to control reduced search range in raster step of TZSearch
+extern int iagoReducedSR;
+extern int iagoReducedSRNdivisions;
+extern double *iagoReducedSRBandsDistribution;
+extern double *iagoReducedSRBandsScaleVerticalSR;
+extern double *iagoReducedSRBandsScaleHorizontalSR;
 // iagostorch end
 
 using namespace std;
@@ -705,7 +712,9 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   SMultiValueInput<Double> iagoReducedFMEBandsDistribution_cfg      (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
   SMultiValueInput<Int> iagoReducedFMEBandsHorizontalPrecision_cfg           (0, std::numeric_limits<Int>::max(), 0, std::numeric_limits<Int>::max());
   SMultiValueInput<Int> iagoReducedFMEBandsVerticalPrecision_cfg           (0, std::numeric_limits<Int>::max(), 0, std::numeric_limits<Int>::max());
-  
+  SMultiValueInput<Double> iagoReducedSRBandsDistribution_cfg         (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Double> iagoReducedSRBandsScaleVerticalSR_cfg         (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Double> iagoReducedSRBandsScaleHorizontalSR_cfg       (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
   // iagostorch end
     po::Options opts;
   opts.addOptions()
@@ -724,6 +733,11 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   ("IagoReducedFMEBandsDistribution",                 iagoReducedFMEBandsDistribution_cfg,    iagoReducedFMEBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order, for the Reduced FME technique")
   ("IagoReducedFMEBandsHorizontalPrecision",          iagoReducedFMEBandsHorizontalPrecision_cfg,          iagoReducedFMEBandsHorizontalPrecision_cfg, "Array containing the motion estimation horizontal precision for each band, in a top-bottom order")
   ("IagoReducedFMEBandsVerticalPrecision",            iagoReducedFMEBandsVerticalPrecision_cfg,            iagoReducedFMEBandsVerticalPrecision_cfg,   "Array containing the motion estimation vertical precision for each band, in a top-bottom order")
+  // Encoding parameters for Reduced Search Range technique
+  ("IagoReducedSR",                                   iagoReducedSR,                                        0, "Enable reduced search range algorithm. The search range of raster step in TZSearch is reduced for some blocks")
+  ("IagoReducedSRBandsDistribution",                  iagoReducedSRBandsDistribution_cfg,    iagoReducedSRBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order")
+  ("IagoReducedSRBandsScaleVerticalSR",               iagoReducedSRBandsScaleVerticalSR_cfg,          iagoReducedSRBandsScaleVerticalSR_cfg, "Array containing the vertical scale factor of search range in raster step for each band, in a top-bottom order")
+  ("IagoReducedSRBandsScaleHorizontalSR",             iagoReducedSRBandsScaleHorizontalSR_cfg,            iagoReducedSRBandsScaleHorizontalSR_cfg,   "Array containing the horizontal scale factor of search range in raster step for each band, in a top-bottom order")
   // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
@@ -1223,6 +1237,29 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
           iagoReducedFMEBandsDistribution[el] = iagoReducedFMEBandsDistribution_cfg.values[el];
           iagoReducedFMEBandsHorizontalPrecision[el] = iagoReducedFMEBandsHorizontalPrecision_cfg.values[el];
           iagoReducedFMEBandsVerticalPrecision[el] = iagoReducedFMEBandsVerticalPrecision_cfg.values[el];
+      }   
+  }
+
+  // Parse encoding parameters and fill array for bands distribution and search range scaling for each band
+  if(iagoReducedSRBandsDistribution_cfg.values.size() > 0){ // A specific bands distribution was provided in the encoding
+
+      int nElements = iagoReducedSRBandsDistribution_cfg.values.size();
+      assert((nElements == 2) or (nElements == 4));                             // there should be either 3 or 5 bands (2 ou 4 divisions)
+      assert(iagoReducedSRBandsScaleVerticalSR_cfg.values.size() == nElements/2);
+      assert(iagoReducedSRBandsScaleHorizontalSR_cfg.values.size() == nElements/2);    // there should be one scale for each pair of bands
+      
+      iagoReducedSRNdivisions = nElements;
+
+      iagoReducedSRBandsDistribution = (double *) malloc(nElements * sizeof(double));
+      iagoReducedSRBandsScaleVerticalSR = (Double *) malloc(nElements * sizeof(Int));
+      iagoReducedSRBandsScaleHorizontalSR = (Double *) malloc(nElements * sizeof(Int));
+      
+
+      // copy parsed parameters to control variables
+      for(int el = 0; el < nElements; el++){
+          iagoReducedSRBandsDistribution[el] = iagoReducedSRBandsDistribution_cfg.values[el];
+          iagoReducedSRBandsScaleVerticalSR[el] = iagoReducedSRBandsScaleVerticalSR_cfg.values[el];
+          iagoReducedSRBandsScaleHorizontalSR[el] = iagoReducedSRBandsScaleHorizontalSR_cfg.values[el];
       }   
   }
   // iagostorch end

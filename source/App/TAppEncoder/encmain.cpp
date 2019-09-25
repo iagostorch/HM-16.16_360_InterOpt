@@ -57,6 +57,13 @@ double *iagoReducedFMEBandsDistribution;
 Int *iagoReducedFMEBandsHorizontalPrecision;
 Int *iagoReducedFMEBandsVerticalPrecision;
 
+// Variables to control reduced search range in raster step
+int iagoReducedSR;
+int iagoReducedSRNdivisions;
+double *iagoReducedSRBandsDistribution;
+double *iagoReducedSRBandsScaleVerticalSR;
+double *iagoReducedSRBandsScaleHorizontalSR;
+
 ofstream mvFile;
 ofstream finalCuInfo;
 ofstream intermediateCuInfo;

@@ -64,6 +64,13 @@ extern int iagoReducedFMENdivisions;
 extern double *iagoReducedFMEBandsDistribution;;
 extern Int *iagoReducedFMEBandsHorizontalPrecision;
 extern Int *iagoReducedFMEBandsVerticalPrecision;
+
+// Encoding parameters to control reduced search range in raster step
+extern int iagoReducedSR;
+extern int iagoReducedSRNdivisions;
+extern double *iagoReducedSRBandsDistribution;
+extern double *iagoReducedSRBandsScaleVerticalSR;
+extern double *iagoReducedSRBandsScaleHorizontalSR;
 // iagostorch end
 
 using namespace std;
@@ -529,8 +536,8 @@ Void TAppEncTop::encode()
     cout <<"\t\tEarly Skip Integral: "; for(int i=0; i<iagoEarlySkipNdivisions/2; i++) cout << iagoEarlySkipIntegral[i] << ", " ;
     cout << endl;
   }
+  printf("\tReduced FME:         %d\n", iagoReducedFME);
   if(iagoReducedFME){
-    printf("\tReduced FME:          %d\n", iagoReducedFME);
     printf("\t\tNumber of bands:      %d\n", iagoReducedFMENdivisions+1);
     cout<<("\t\tBands distribution:   "); for(int el=0;el<iagoReducedFMENdivisions;el++) cout << iagoReducedFMEBandsDistribution[el] << ", ";
     cout << endl;
@@ -538,6 +545,16 @@ Void TAppEncTop::encode()
     cout << endl;
     cout<<("\t\tBands Vert Precision: "); for(int el=0;el<iagoReducedFMENdivisions/2;el++) cout << iagoReducedFMEBandsVerticalPrecision[el] << ", ";
     cout << endl;  
+  }
+  printf("\tReduced SR:          %d\n", iagoReducedSR);
+  if(iagoReducedSR){
+  printf("\t\tNumber of bands:      %d\n", iagoReducedSRNdivisions+1);
+  cout<<("\t\tBands distribution:   "); for(int el=0;el<iagoReducedSRNdivisions;el++) cout << iagoReducedSRBandsDistribution[el] << ", ";
+  cout << endl;
+  cout<<("\t\tBands Hori Scale:     "); for(int el=0;el<iagoReducedSRNdivisions/2;el++) cout << iagoReducedSRBandsScaleHorizontalSR[el] << ", ";
+  cout << endl;
+  cout<<("\t\tBands Vert Scale:     "); for(int el=0;el<iagoReducedSRNdivisions/2;el++) cout << iagoReducedSRBandsScaleVerticalSR[el] << ", ";
+  cout << endl;  
   }
   printf("###############################################\n\n\n");
   // iagostorch end

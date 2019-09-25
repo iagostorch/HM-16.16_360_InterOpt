@@ -53,6 +53,13 @@ extern int iagoReducedFMENdivisions;
 extern double *iagoReducedFMEBandsDistribution;
 extern Int *iagoReducedFMEBandsHorizontalPrecision;
 extern Int *iagoReducedFMEBandsVerticalPrecision;
+// Custom encoding parameters to control reduced Search Range technique
+extern int iagoReducedSR;
+extern int iagoReducedSRNdivisions;
+extern double *iagoReducedSRBandsDistribution;
+extern double *iagoReducedSRBandsScaleVerticalSR;
+extern double *iagoReducedSRBandsScaleHorizontalSR;
+Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVerTop, Int &iSrchRngVerBottom,Int &iSrchRngHorLeft,Int &iSrchRngHorRight);
 
 #include <sys/time.h>
 
@@ -4388,6 +4395,10 @@ Void TEncSearch::xTZSearch( const TComDataCU* const pcCU,
       // iagostorch begin 
       // track if raster scan is done
       didRaster = 1;      
+   
+      if(iagoReducedSR){
+          calculateSearchRangeScale(pcCU, iSrchRngVerTop, iSrchRngVerBottom, iSrchRngHorLeft, iSrchRngHorRight);
+      }
       // iagostorch end
       cStruct.uiBestDistance = iRaster;
       for ( iStartY = iSrchRngVerTop; iStartY <= iSrchRngVerBottom; iStartY += iRaster )
@@ -6354,5 +6365,48 @@ Void  TEncSearch::setWpScalingDistParam( TComDataCU* pcCU, Int iRefIdx, RefPicLi
     m_cDistParam.wpCur = wp1;
   }
 }
+
+// iagostorch begin
+// This function determines the search range employed during raster step of TZSearch
+// based on custom encoding parameters
+Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVerTop, Int &iSrchRngVerBottom, Int &iSrchRngHorLeft, Int &iSrchRngHorRight){
+    
+    int nBands = iagoReducedSRNdivisions+1;
+    
+    int cuHeight = 64 >> (currCU->getDepth(0));
+    int absVertPos = currCU->getCUPelY() + cuHeight/2;
+    float relativeVertPos = (float) absVertPos/(currCU->getPic()->getFrameHeightInCtus()*64);
+    
+    if (nBands == 3){
+       if(relativeVertPos <= iagoReducedSRBandsDistribution[0] or relativeVertPos >= iagoReducedSRBandsDistribution[1]){
+       // It is in polar bands
+           iSrchRngVerTop = iSrchRngVerTop        * iagoReducedSRBandsScaleVerticalSR[0];
+           iSrchRngVerBottom = iSrchRngVerBottom  * iagoReducedSRBandsScaleVerticalSR[0];
+           iSrchRngHorLeft = iSrchRngHorLeft      * iagoReducedSRBandsScaleHorizontalSR[0];
+           iSrchRngHorRight = iSrchRngHorRight    * iagoReducedSRBandsScaleHorizontalSR[0];
+        } 
+    }
+    else if(nBands == 5){
+       if(relativeVertPos <= iagoReducedSRBandsDistribution[0] or relativeVertPos >= iagoReducedSRBandsDistribution[3]){
+       // It is in polar bands
+           iSrchRngVerTop = iSrchRngVerTop        * iagoReducedSRBandsScaleVerticalSR[0];
+           iSrchRngVerBottom = iSrchRngVerBottom  * iagoReducedSRBandsScaleVerticalSR[0];
+           iSrchRngHorLeft = iSrchRngHorLeft      * iagoReducedSRBandsScaleHorizontalSR[0];
+           iSrchRngHorRight = iSrchRngHorRight    * iagoReducedSRBandsScaleHorizontalSR[0];
+        } 
+       else if(relativeVertPos <= iagoReducedSRBandsDistribution[1] or relativeVertPos >= iagoReducedSRBandsDistribution[2]){
+        // It is in mid-polar bands
+           iSrchRngVerTop = iSrchRngVerTop        * iagoReducedSRBandsScaleVerticalSR[1];
+           iSrchRngVerBottom = iSrchRngVerBottom  * iagoReducedSRBandsScaleVerticalSR[1];
+           iSrchRngHorLeft = iSrchRngHorLeft      * iagoReducedSRBandsScaleHorizontalSR[1];
+           iSrchRngHorRight = iSrchRngHorRight    * iagoReducedSRBandsScaleHorizontalSR[1];
+        }
+    }
+    else{
+        cout << "Error - Invalid number of bands in reduced search range technique" << endl;
+    }
+}     
+
+// iagostorch end
 
 //! \}
