@@ -1251,8 +1251,8 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
       iagoReducedSRNdivisions = nElements;
 
       iagoReducedSRBandsDistribution = (double *) malloc(nElements * sizeof(double));
-      iagoReducedSRBandsScaleVerticalSR = (Double *) malloc(nElements * sizeof(Int));
-      iagoReducedSRBandsScaleHorizontalSR = (Double *) malloc(nElements * sizeof(Int));
+      iagoReducedSRBandsScaleVerticalSR = (Double *) malloc(nElements * sizeof(double));
+      iagoReducedSRBandsScaleHorizontalSR = (Double *) malloc(nElements * sizeof(double));
       
 
       // copy parsed parameters to control variables
