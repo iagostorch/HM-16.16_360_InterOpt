@@ -44,10 +44,12 @@
 // iagostorch begin
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
+int iagoEarlySkipAdaptiveQP; // Custom encodin parameter. When enabled, variance cutoff for early skip varies according to QP
 double *iagoEarlySkipIntegral; // Custom parameter. Controls variance threshold for early skip in each band
 double *iagoEarlySkipBandsDistribution; // Custom encoding parameter. Controle the size of each band
 int iagoEarlySkipNdivisions;
 int iagoIs10bitsVideo = 0; // Detects if video is 10 bits. If it is 10 bits, it must be converted to 8 bits to employ the same variance cutoff
+int keyQP;      // Used to index the appropriate variance cutoff when adaptive QP is enabled
 Int** samplesMatrix; // Used to store the samples value for future variance calculation
 
 // Variables to control reduced FME schedule

@@ -53,6 +53,7 @@
 // iagostorch begin
 // Encoding parameters to control Early Skip technique
 extern int iagoEarlySkip;
+extern int iagoEarlySkipAdaptiveQP;
 extern double *iagoEarlySkipIntegral;
 extern double *iagoEarlySkipBandsDistribution;
 extern int iagoEarlySkipNdivisions;
@@ -531,6 +532,7 @@ Void TAppEncTop::encode()
   printf("\tEarly Skip:          %d\n", iagoEarlySkip);
   if(iagoEarlySkip){
     printf("\t\tNumber of bands:     %d\n", iagoEarlySkipNdivisions+1);
+    printf("\t\tAdaptive QP:         %d\n", iagoEarlySkipAdaptiveQP);
     cout<<"\t\tBands Distribution:  "; for(int i = 0; i<iagoEarlySkipNdivisions; i++) cout << iagoEarlySkipBandsDistribution[i] << ", ";
     cout << endl;
     cout <<"\t\tEarly Skip Integral: "; for(int i=0; i<iagoEarlySkipNdivisions/2; i++) cout << iagoEarlySkipIntegral[i] << ", " ;

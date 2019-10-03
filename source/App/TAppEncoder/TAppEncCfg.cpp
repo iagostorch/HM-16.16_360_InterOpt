@@ -55,9 +55,11 @@
 // iagostorch begin
 // Encoding parameters used to enable/disable Early Skip
 extern int iagoEarlySkip;
+extern int iagoEarlySkipAdaptiveQP;
 extern double *iagoEarlySkipIntegral;
 extern double *iagoEarlySkipBandsDistribution;
 extern int iagoEarlySkipNdivisions;
+extern int keyQP;
 
 // Encoding parameters used to control reduced FME schedule
 extern int iagoReducedFME;
@@ -726,6 +728,7 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   // iagostorch begin
   // Encoding parameters for Early Skip technique
   ("IagoEarlySkip",                                   iagoEarlySkip,                                        0, "Enable the Early Skip technique based on block variance")
+  ("IagoEarlySkipAdaptiveQP",                         iagoEarlySkipAdaptiveQP,                              0, "When enabled, the variance cutoff for Early Skip varies according to QP")
   ("IagoEarlySkipIntegral",                           iagoEarlySkipIntegral_cfg,             iagoEarlySkipIntegral_cfg, "Control the variance threshold for early skip")
   ("IagoEarlySkipBandsDistribution",                  iagoEarlySkipBandsDistribution_cfg,             iagoEarlySkipBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order, for the Early Skip technique")
   // Encoding parameters for Reduced FME technique
@@ -1199,6 +1202,9 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   }
 
   // iagostorch begin
+  
+  keyQP = m_iQP; // Saves QP parameter to be used in EarlySkip AdaptiveQP operating mode
+  
  // Parse encoding parameters and fill array for bands distribution and Early Skip integral values
   if(iagoEarlySkipBandsDistribution_cfg.values.size() > 0 ){
       int nElements = iagoEarlySkipBandsDistribution_cfg.values.size();
