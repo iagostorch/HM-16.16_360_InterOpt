@@ -582,12 +582,25 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   const Bool bBoundary = !( uiRPelX < sps.getPicWidthInLumaSamples() && uiBPelY < sps.getPicHeightInLumaSamples() );
 
 // iagostorch begin
+  
+  int evaluateIntraCondition = 1;    // Enables the intra prediction in current CU, with PU 2Nx2N
+  int evaluateIntraNxNCondition = 1; // Enables the possibility to use PUs NxN in current CU
+  int splitIntraCondition = 1;       // Determines if current CU shoud be split or not
+  int maxDesiredDepth = 4;           // The maximum depth in which intra prediction will be evaluated
+  
+  if (rpcTempCU->getDepth(0) > (maxDesiredDepth-1))
+      splitIntraCondition = 0;
+  if (rpcTempCU->getDepth(0) > maxDesiredDepth)
+      evaluateIntraCondition = 0;
+  if (maxDesiredDepth < 4)
+      evaluateIntraNxNCondition = 0;
+  
   int forceSkip;    // forceSkip is used to force a CU to be encoded with skip. Evaluation of remaining modes are skipped
   if(iagoEarlySkip)
       forceSkip = shouldForceSkip(rpcBestCU);
   else
       forceSkip = 0;
-     
+
   // iagostorch end
   if ( !bBoundary )
   {
@@ -861,7 +874,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
 #endif
           }
         }
-
+        // iagostorch 
+        if(evaluateIntraCondition){ // If this is true, then the intra prediction will be performed in current CU
         // do normal intra modes
         // speedup for inter frames
         if((rpcBestCU->getSlice()->getSliceType() == I_SLICE)                                        ||
@@ -876,6 +890,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           gettimeofday(&tv16, NULL); // iagostorch
           checkIntraTime += (double) (tv16.tv_usec - tv15.tv_usec)/1000000 + (double) (tv16.tv_sec - tv15.tv_sec); // iagostorch
           rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
+          // iagostorch
+          if(evaluateIntraNxNCondition){ // This condition determines if intra prediction will evaluate NxN PUs (in practice, 4x4 PUs)
           if( uiDepth == sps.getLog2DiffMaxMinCodingBlockSize() )
           {
             if( rpcTempCU->getWidth(0) > ( 1 << sps.getQuadtreeTULog2MinSize() ) )
@@ -887,6 +903,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
               rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
             }
           }
+        } // iagostorch close bracket for NxN PUs
         }
 
         // test PCM
@@ -902,7 +919,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             rpcTempCU->initEstData( uiDepth, iQP, bIsLosslessMode );
           }
         }
-
+        } // iagostorch close bracket for intra prediction    
+        
         if (bIsLosslessMode) // Restore loop variable if lossless mode was searched.
         {
           iQP = iMinQP;
@@ -967,9 +985,11 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   {
     iMaxQP = iMinQP; // If all TUs are forced into using transquant bypass, do not loop here.
   }
-
+      
   const Bool bSubBranch = bBoundary || !( m_pcEncCfg->getUseEarlyCU() && rpcBestCU->getTotalCost()!=MAX_DOUBLE && rpcBestCU->isSkipped(0) );
 
+  // iagostorch
+  if(splitIntraCondition){  // If this is true, then the current CU will be split
   if( bSubBranch && uiDepth < sps.getLog2DiffMaxMinCodingBlockSize() && (!getFastDeltaQp() || uiWidth > fastDeltaQPCuMaxSize || bBoundary))
   {
     // further split
@@ -1116,7 +1136,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
                                                                                                                                                        // with sub partitioned prediction.
     }
   }
-
+} // iagostorch close bracket for split CU
+  
   DEBUG_STRING_APPEND(sDebug_, sDebug);
 
   rpcBestCU->copyToPic(uiDepth);                                                     // Copy Best data to Picture for next partition prediction.
