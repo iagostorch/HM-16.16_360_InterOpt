@@ -86,6 +86,7 @@ extern Int extractIntermediateCuInfo;
 extern ofstream intermediateCuInfo;
 extern Int** samplesMatrix;
 extern int keyQP;
+extern int maxDepthMatrix[depthMatrixHeight][depthMatrixWidth]; // Used to track max depth in each CTU
 
 // iagostorch end
 
@@ -283,6 +284,31 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
   xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
   DEBUG_STRING_OUTPUT(std::cout, sDebug)
 
+  // iagostorch begin
+  
+  int blockDepth;
+  int maxDepth = 0;
+  int ctuPosY = pCtu->getCtuRsAddr()/pCtu->getPic()->getFrameWidthInCtus();
+  int ctuPosX = pCtu->getCtuRsAddr()-ctuPosY*pCtu->getPic()->getFrameWidthInCtus();
+  int nBlocks = pCtu->getTotalNumPart(); // Number of minimum partitions inside CTU
+  
+  for(int i=0; i<nBlocks; i++){  
+      blockDepth = (int) pCtu->getDepth(i);
+      
+      // If CU has depth 3 (8x8), then the PUs can have depth 4 (PUs4x4)
+      if(blockDepth == 3){
+          int puType = pCtu->getPartitionSize(i);
+          if(puType != 0)   // PU type 0 is 2Nx2N, PU type 3 is NxN (PUs 4x4)
+              maxDepth = 4;
+      }
+      // Update the maximum depth of CTU
+      if(blockDepth > maxDepth)
+          maxDepth = blockDepth;
+  }
+  maxDepthMatrix[ctuPosY][ctuPosX] = maxDepth;
+
+  // iagostorch end
+          
 #if ADAPTIVE_QP_SELECTION
   if( m_pcEncCfg->getUseAdaptQpSelect() )
   {

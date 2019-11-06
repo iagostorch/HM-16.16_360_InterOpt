@@ -122,6 +122,10 @@ static const Int HALF_PEL =         1;
 static const Int QUARTER_PEL =      2;
 static const Int RESOLUTIONS_PEL =  3;
 
+// Variables to declare max depth of CTUs
+static const Int depthMatrixWidth =  200;
+static const Int depthMatrixHeight = 100;
+
 // iagostorch end
 
 // ====================================================================================================================

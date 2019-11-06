@@ -66,6 +66,9 @@ double *iagoReducedSRBandsDistribution;
 double *iagoReducedSRBandsScaleVerticalSR;
 double *iagoReducedSRBandsScaleHorizontalSR;
 
+// Variables to control the max depth reached in each CTU
+int maxDepthMatrix[depthMatrixHeight][depthMatrixWidth];
+
 ofstream mvFile;
 ofstream finalCuInfo;
 ofstream intermediateCuInfo;
@@ -122,6 +125,12 @@ int main(int argc, char* argv[]) {
         intermediateCuInfo.open("intermediatePU.csv");
         intermediateCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
     }
+    
+    // Initialize max depth of CTUs with depth 0 (64x64)
+    for (int i=0; i<depthMatrixHeight; i++)
+        for(int j=0; j<depthMatrixWidth; j++)
+            maxDepthMatrix[i][j] = 0;
+    
     // iagostorch end
     TAppEncTop cTAppEncTop;
 
@@ -208,6 +217,13 @@ int main(int argc, char* argv[]) {
         intermediateCuInfo.close();
     }
 
+//    for(int h=0; h<26; h++){
+//        for(int w=0; w<52; w++){
+//            cout << maxDepthMatrix[h][w];
+//        }
+//        cout << endl;
+//    }
+    
     // iagostorch end
 
     return 0;
