@@ -997,7 +997,9 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   const Bool bSubBranch = bBoundary || !( m_pcEncCfg->getUseEarlyCU() && rpcBestCU->getTotalCost()!=MAX_DOUBLE && rpcBestCU->isSkipped(0) );
 
   // iagostorch
-  if(splitIntraCondition){  // If this is true, then the current CU will be split
+  
+  if(rpcTempCU->getSlice()->getSliceType() != I_SLICE || 
+    (rpcTempCU->getSlice()->getSliceType() == I_SLICE && splitIntraCondition)){  // If this is true, then the current CU will be split
   if( bSubBranch && uiDepth < sps.getLog2DiffMaxMinCodingBlockSize() && (!getFastDeltaQp() || uiWidth > fastDeltaQPCuMaxSize || bBoundary))
   {
     // further split
