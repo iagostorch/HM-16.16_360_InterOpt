@@ -88,6 +88,10 @@ extern Int** samplesMatrix;
 extern int keyQP;
 extern int maxDepthMatrix[depthMatrixHeight][depthMatrixWidth]; // Used to track max depth in each CTU
 
+// Variables to control the reduction of intra PU sizes
+extern float hitRate;
+extern int Res1664_MAX_DEPTH_PER_ROW[26];
+
 // iagostorch end
 
 //! \ingroup TLibEncoder
@@ -586,7 +590,11 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   int evaluateIntraCondition = 1;    // Enables the intra prediction in current CU, with PU 2Nx2N
   int evaluateIntraNxNCondition = 1; // Enables the possibility to use PUs NxN in current CU
   int splitIntraCondition = 1;       // Determines if current CU shoud be split or not
-  int maxDesiredDepth = 4;           // The maximum depth in which intra prediction will be evaluated
+  int maxDesiredDepth = 4;           // The maximum depth in which intra prediction will be evaluated  
+  
+  // Extract the vertical position of current CTU and get the maximum intra PU size accordingly
+  int frameRow = rpcTempCU->getCtuRsAddr()/rpcTempCU->getPic()->getFrameWidthInCtus();
+  maxDesiredDepth = Res1664_MAX_DEPTH_PER_ROW[frameRow];
   
   if (rpcTempCU->getDepth(0) > (maxDesiredDepth-1))
       splitIntraCondition = 0;

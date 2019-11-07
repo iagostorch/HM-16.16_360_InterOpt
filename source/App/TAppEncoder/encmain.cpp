@@ -42,6 +42,11 @@
 #include "TAppCommon/program_options_lite.h"
 
 // iagostorch begin
+
+// Variables to control the PU size reduction in intra prediction
+#include "../../Lib/TLibCommon/PU_SIZES_DISTRIBUTION.cpp"
+float hitRate = 0.95;   // Control the precision of the PU size skip technique
+
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
 int iagoEarlySkipAdaptiveQP; // Custom encodin parameter. When enabled, variance cutoff for early skip varies according to QP
@@ -130,6 +135,9 @@ int main(int argc, char* argv[]) {
     for (int i=0; i<depthMatrixHeight; i++)
         for(int j=0; j<depthMatrixWidth; j++)
             maxDepthMatrix[i][j] = 0;
+    // Updates the maximum depth based on occurrence rate distribution
+    // TODO: Make adaptive to video resolution
+    calculateMaxDepths();
     
     // iagostorch end
     TAppEncTop cTAppEncTop;
@@ -216,13 +224,6 @@ int main(int argc, char* argv[]) {
     if (extractIntermediateCuInfo) {
         intermediateCuInfo.close();
     }
-
-//    for(int h=0; h<26; h++){
-//        for(int w=0; w<52; w++){
-//            cout << maxDepthMatrix[h][w];
-//        }
-//        cout << endl;
-//    }
     
     // iagostorch end
 
