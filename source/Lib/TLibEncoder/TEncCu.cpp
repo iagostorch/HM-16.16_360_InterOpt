@@ -86,11 +86,11 @@ extern Int extractIntermediateCuInfo;
 extern ofstream intermediateCuInfo;
 extern Int** samplesMatrix;
 extern int keyQP;
-extern int maxDepthMatrix[depthMatrixHeight][depthMatrixWidth]; // Used to track max depth in each CTU
+extern int maxDepthMatrixPrevFrame[depthMatrixHeight][depthMatrixWidth]; // Used to track max depth in each CTU
 
 // Variables to control the reduction of intra PU sizes
 extern float hitRate;
-extern int Res1664_MAX_DEPTH_PER_ROW[26];
+extern int *MAX_DEPTH_PER_ROW;
 
 // iagostorch end
 
@@ -309,7 +309,7 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
       if(blockDepth > maxDepth)
           maxDepth = blockDepth;
   }
-  maxDepthMatrix[ctuPosY][ctuPosX] = maxDepth;
+  maxDepthMatrixPrevFrame[ctuPosY][ctuPosX] = maxDepth;
 
   // iagostorch end
           
@@ -594,7 +594,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   
   // Extract the vertical position of current CTU and get the maximum intra PU size accordingly
   int frameRow = rpcTempCU->getCtuRsAddr()/rpcTempCU->getPic()->getFrameWidthInCtus();
-  maxDesiredDepth = Res1664_MAX_DEPTH_PER_ROW[frameRow];
+  maxDesiredDepth = MAX_DEPTH_PER_ROW[frameRow];
   
   if (rpcTempCU->getDepth(0) > (maxDesiredDepth-1))
       splitIntraCondition = 0;

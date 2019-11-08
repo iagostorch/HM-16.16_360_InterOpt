@@ -44,8 +44,7 @@
 // iagostorch begin
 
 // Variables to control the PU size reduction in intra prediction
-#include "../../Lib/TLibCommon/PU_SIZES_DISTRIBUTION.cpp"
-float hitRate = 0.95;   // Control the precision of the PU size skip technique
+float hitRate = 0.75;   // Control the precision of the PU size skip technique
 
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
@@ -72,7 +71,7 @@ double *iagoReducedSRBandsScaleVerticalSR;
 double *iagoReducedSRBandsScaleHorizontalSR;
 
 // Variables to control the max depth reached in each CTU
-int maxDepthMatrix[depthMatrixHeight][depthMatrixWidth];
+int maxDepthMatrixPrevFrame[depthMatrixHeight][depthMatrixWidth];
 
 ofstream mvFile;
 ofstream finalCuInfo;
@@ -134,10 +133,7 @@ int main(int argc, char* argv[]) {
     // Initialize max depth of CTUs with depth 0 (64x64)
     for (int i=0; i<depthMatrixHeight; i++)
         for(int j=0; j<depthMatrixWidth; j++)
-            maxDepthMatrix[i][j] = 0;
-    // Updates the maximum depth based on occurrence rate distribution
-    // TODO: Make adaptive to video resolution
-    calculateMaxDepths();
+            maxDepthMatrixPrevFrame[i][j] = 0;
     
     // iagostorch end
     TAppEncTop cTAppEncTop;
@@ -166,7 +162,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error parsing option \"" << e.arg << "\" with argument \"" << e.val << "\"." << std::endl;
         return 1;
     }
-
+    
 #if PRINT_MACRO_VALUES
     printMacroSettings();
 #endif
