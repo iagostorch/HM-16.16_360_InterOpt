@@ -81,6 +81,7 @@ int   shouldForceSkip     (TComDataCU* currCU); // This function defines if curr
 float getCurrentCutoffVariance_3BandsPolar(int currDepth);
 float getCurrentCutoffVariance_5BandsPolar(int currDepth);
 float getCurrentCutoffVariance_5BandsMidPolar(int currDepth);
+void getRDCostPerDepth(TComDataCU* pCtu);
 
 extern Int extractIntermediateCuInfo;
 extern ofstream intermediateCuInfo;
@@ -90,7 +91,29 @@ extern int maxDepthMatrixPrevFrame[depthMatrixHeight][depthMatrixWidth]; // Used
 
 // Variables to control the reduction of intra PU sizes
 extern float hitRate;
+extern int statisticalPUSizeReduction;  // Enable the reduction of PU size based on PU size distribution statistics
 extern int *MAX_DEPTH_PER_ROW;
+extern int extractRDInfo;
+extern ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
+
+// These variables hold the RD-cost, number of bits and intra prediction mode for each PU
+double RD_64;
+double RD_32[2][2];
+double RD_16[4][4];
+double RD_8[8][8];
+double RD_4[16][16];
+
+double BITS_64;;
+double BITS_32[2][2];
+double BITS_16[4][4];
+double BITS_8[8][8];
+double BITS_4[16][16];
+
+int MODES_64;
+int MODES_32[2][2];
+int MODES_16[4][4];
+int MODES_8[8][8];
+int MODES_4[16][16];
 
 // iagostorch end
 
@@ -284,12 +307,16 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
 
   // analysis of CU
   DEBUG_STRING_NEW(sDebug)
-
+  
   xCompressCU( m_ppcBestCU[0], m_ppcTempCU[0], 0 DEBUG_STRING_PASS_INTO(sDebug) );
   DEBUG_STRING_OUTPUT(std::cout, sDebug)
-
+         
   // iagostorch begin
   
+  if(extractRDInfo){
+      getRDCostPerDepth(pCtu);
+  }
+          
   int blockDepth;
   int maxDepth = 0;
   int ctuPosY = pCtu->getCtuRsAddr()/pCtu->getPic()->getFrameWidthInCtus();
@@ -592,9 +619,11 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   int splitIntraCondition = 1;       // Determines if current CU shoud be split or not
   int maxDesiredDepth = 4;           // The maximum depth in which intra prediction will be evaluated  
   
-  // Extract the vertical position of current CTU and get the maximum intra PU size accordingly
-  int frameRow = rpcTempCU->getCtuRsAddr()/rpcTempCU->getPic()->getFrameWidthInCtus();
-  maxDesiredDepth = MAX_DEPTH_PER_ROW[frameRow];
+  if(statisticalPUSizeReduction){
+      // Extract the vertical position of current CTU and get the maximum intra PU size accordingly
+      int frameRow = rpcTempCU->getCtuRsAddr()/rpcTempCU->getPic()->getFrameWidthInCtus();
+      maxDesiredDepth = MAX_DEPTH_PER_ROW[frameRow];
+  }
   
   if (rpcTempCU->getDepth(0) > (maxDesiredDepth-1))
       splitIntraCondition = 0;
@@ -1712,9 +1741,61 @@ Void TEncCu::xCheckRDCostIntra( TComDataCU *&rpcBestCU,
   rpcTempCU->getTotalBins() = ((TEncBinCABAC *)((TEncSbac*)m_pcEntropyCoder->m_pcEntropyCoderIf)->getEncBinIf())->getBinsCoded();
   rpcTempCU->getTotalCost() = m_pcRdCost->calcRdCost( rpcTempCU->getTotalBits(), rpcTempCU->getTotalDistortion() );
 
+  // iagostorch begin
+  if(extractRDInfo){
+    // Before checking if the current PU size is the best partitioning
+    // The RD-cost, number of bits and intra mode is stored in these matrix
+
+    int xPos = rpcTempCU->getCUPelX(); // Position inside the frame
+    int yPos = rpcTempCU->getCUPelY();
+
+    int xInternalPos = ((float)xPos/64 - xPos/64)*64; // Position inside the CTU
+    int yInternalPos = ((float)yPos/64 - yPos/64)*64;
+
+    if(int(rpcTempCU->getDepth(0)) == 0){
+        RD_64 = rpcTempCU->getTotalCost();
+  //      BITS_64 = rpcTempCU->getTotalBits();
+  //      MODES_64 = (int) rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[0];
+    }
+    else if(int(rpcTempCU->getDepth(0)) == 1){
+        int xId = xInternalPos/32;
+        int yId = yInternalPos/32;
+        RD_32[yId][xId] = rpcTempCU->getTotalCost();
+  //      BITS_32[yId][xId] = rpcTempCU->getTotalBits();
+  //      MODES_32[yId][xId] = (int) rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[0];
+    }
+    else if(int(rpcTempCU->getDepth(0)) == 2){
+        int xId = xInternalPos/16;
+        int yId = yInternalPos/16;
+        RD_16[yId][xId] = rpcTempCU->getTotalCost();
+  //      BITS_16[yId][xId] = rpcTempCU->getTotalBits();
+  //      MODES_16[yId][xId] = (int) rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[0];
+    }
+    else if(int(rpcTempCU->getDepth(0)) == 3 && eSize == SIZE_2Nx2N){
+        int xId = xInternalPos/8;
+        int yId = yInternalPos/8;
+        RD_8[yId][xId] = rpcTempCU->getTotalCost();
+  //      BITS_8[yId][xId] = rpcTempCU->getTotalBits();
+  //      MODES_8[yId][xId] = (int) rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[0];
+    }
+    // IMPORTANT !!!
+    // The RD-cost for PUs 4x4 are stored as if they were a single 8x8 PU, with the total RD-cost
+    else if(int(rpcTempCU->getDepth(0)) == 3 && eSize == SIZE_NxN){
+        int xId = xInternalPos/8;
+        int yId = yInternalPos/8;
+        RD_4[2*yId][2*xId] = rpcTempCU->getTotalCost();
+  //      BITS_4[2*yId][2*xId] = rpcTempCU->getTotalBits();
+  //      MODES_4[2*yId][2*xId] =  rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[0];
+  //      MODES_4[2*yId][2*xId+1] =  rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[1];
+  //      MODES_4[2*yId+1][2*xId] =  rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[2];
+  //      MODES_4[2*yId+1][2*xId+1] =  rpcTempCU->getIntraDir(CHANNEL_TYPE_LUMA)[3];
+    }
+  }
+  // iagostorch end
+  
   xCheckDQP( rpcTempCU );
 
-  xCheckBestMode(rpcBestCU, rpcTempCU, uiDepth DEBUG_STRING_PASS_INTO(sDebug) DEBUG_STRING_PASS_INTO(sTest));
+  xCheckBestMode(rpcBestCU, rpcTempCU, uiDepth DEBUG_STRING_PASS_INTO(sDebug) DEBUG_STRING_PASS_INTO(sTest));  
 }
 
 
@@ -6745,6 +6826,74 @@ float getCurrentCutoffVariance_5BandsMidPolar(int currDepth){
     }
     
     return currCutoff;
+}
+
+// This function evaluates the final partitioning of the CTU pCtu
+// and extract the RD-cost, number of bits and intra mode for each
+// internal CU according to their dimensions
+void getRDCostPerDepth(TComDataCU* pCtu){
+
+    //    cout << "CTU " << pCtu->getCtuRsAddr() << endl;    
+    
+    int i=0, lenght=0, totalSize;
+    int *depth;
+    totalSize = pCtu->getTotalNumPart();
+    
+    depth = (int *) malloc(sizeof(int) * totalSize);
+    
+    int raster, pelX, pelY;    
+    
+    // Position of CTU inside the frame, CTU index and frame index
+    int xInFrame = pCtu->getCUPelX();
+    int yInFrame = pCtu->getCUPelY();
+    int ctuIdx = pCtu->getCtuRsAddr();
+    int frameIdx = pCtu->getPic()->getPOC();
+    
+    // For each CU in the CTU
+    while(i < totalSize){
+        depth[lenght] = (int) pCtu->getDepth(i);
+        
+        // Converts the i-th position in Z order to raster order, and get the X and Y position of the CU inside the CTU
+        raster = g_auiZscanToRaster[i];
+        pelX = g_auiRasterToPelX[raster];
+        pelY = g_auiRasterToPelY[raster];
+
+        // Converts the X and Y pels to index the CTU RD-cost matrix
+        int relPosX = pelX/(64>>depth[lenght]);
+        int relPosY = pelY/(64>>depth[lenght]);
+
+        // Depending on the CU depth, the RD-cost is written to a different file
+        if(depth[lenght] == 0){
+            RDs_64x64 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_64 << endl;
+            cout << "Cost " << RD_64 << endl;
+//            cout << "Mode " << MODES_64 << endl;
+        } else if(depth[lenght] == 1){
+            RDs_32x32 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_32[relPosY][relPosX] << endl;
+            cout << "Cost " << RD_32[relPosY][relPosX] << endl;
+//            cout << "Mode " << MODES_32[relPosY][relPosX] << endl;
+        } else if(depth[lenght] == 2){
+            RDs_16x16 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_16[relPosY][relPosX] << endl;
+            cout << "Cost " << RD_16[relPosY][relPosX] << endl;
+//            cout << "Mode " << MODES_16[relPosY][relPosX] << endl;
+        } else if(depth[lenght] == 3 and pCtu->getPartitionSize(i)==SIZE_2Nx2N){
+            RDs_8x8 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
+            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
+//            cout << "Mode " << MODES_8[relPosY][relPosX] << endl;
+        } 
+        // IMPORTANT !!!
+        // The RD-cost for PUs 4x4 are stored as if they were a single 8x8 PU, with the total RD-cost
+        else if(depth[lenght] == 3 and pCtu->getPartitionSize(i)==SIZE_NxN){
+            RDs_4x4 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
+            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
+//            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX] << endl;
+//            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX+1] << endl;
+//            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX] << endl;
+//            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX+1] << endl;
+        }        
+        // The calculation of i generates the index of the next CU
+        i = i + ((16>>depth[lenght]) * (16>>depth[lenght]));
+        lenght++;
+    }   
 }
 
 // iagostorch end

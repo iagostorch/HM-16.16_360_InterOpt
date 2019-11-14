@@ -44,7 +44,10 @@
 // iagostorch begin
 
 // Variables to control the PU size reduction in intra prediction
-float hitRate = 0.75;   // Control the precision of the PU size skip technique
+float hitRate = 1.00;   // Control the precision of the PU size skip technique
+int statisticalPUSizeReduction = 1; // Enable the reduction of PU size based on PU size distribution statistics
+int extractRDInfo = 1;
+ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
 
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
@@ -128,6 +131,19 @@ int main(int argc, char* argv[]) {
     if (extractIntermediateCuInfo) {
         intermediateCuInfo.open("intermediatePU.csv");
         intermediateCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
+    }
+    
+    if (extractRDInfo){
+        RDs_64x64.open("RD64.csv");
+        RDs_64x64 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_32x32.open("RD32.csv");
+        RDs_32x32 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_16x16.open("RD16.csv");
+        RDs_16x16 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_8x8.open("RD8.csv");
+        RDs_8x8 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_4x4.open("RD4.csv");
+        RDs_4x4 << "Frame,CTU#,PosY,PosX,RD" << endl;
     }
     
     // Initialize max depth of CTUs with depth 0 (64x64)
@@ -219,6 +235,13 @@ int main(int argc, char* argv[]) {
     }
     if (extractIntermediateCuInfo) {
         intermediateCuInfo.close();
+    }
+    if (extractRDInfo){
+        RDs_64x64.close();
+        RDs_32x32.close();
+        RDs_16x16.close();
+        RDs_8x8.close();
+        RDs_4x4.close();
     }
     
     // iagostorch end

@@ -75,6 +75,8 @@ extern double *iagoReducedSRBandsScaleHorizontalSR;
 
 // This is used to calculate maximum depths based on PU size distribution
 #include "../../Lib/TLibCommon/PU_SIZES_DISTRIBUTION.cpp"
+
+extern int statisticalPUSizeReduction;  // Enable the reduction of PU size based on PU size distribution statistics
 // iagostorch end
 
 using namespace std;
@@ -532,7 +534,9 @@ Void TAppEncTop::encode()
   
   // Generate maximum PU depth based on PU size distribution
   // The result is not used yet
-  calculateMaxDepths(m_iSourceHeight);
+  if(statisticalPUSizeReduction){
+    calculateMaxDepths(m_iSourceHeight);
+  }
   
   // Summary of custom encoding parameters
   printf("\n###############################################\n");
