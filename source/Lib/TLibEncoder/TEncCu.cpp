@@ -6865,26 +6865,26 @@ void getRDCostPerDepth(TComDataCU* pCtu){
         // Depending on the CU depth, the RD-cost is written to a different file
         if(depth[lenght] == 0){
             RDs_64x64 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_64 << endl;
-            cout << "Cost " << RD_64 << endl;
+//            cout << "Cost " << RD_64 << endl;
 //            cout << "Mode " << MODES_64 << endl;
         } else if(depth[lenght] == 1){
             RDs_32x32 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_32[relPosY][relPosX] << endl;
-            cout << "Cost " << RD_32[relPosY][relPosX] << endl;
+//            cout << "Cost " << RD_32[relPosY][relPosX] << endl;
 //            cout << "Mode " << MODES_32[relPosY][relPosX] << endl;
         } else if(depth[lenght] == 2){
             RDs_16x16 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_16[relPosY][relPosX] << endl;
-            cout << "Cost " << RD_16[relPosY][relPosX] << endl;
+//            cout << "Cost " << RD_16[relPosY][relPosX] << endl;
 //            cout << "Mode " << MODES_16[relPosY][relPosX] << endl;
         } else if(depth[lenght] == 3 and pCtu->getPartitionSize(i)==SIZE_2Nx2N){
             RDs_8x8 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
-            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
+//            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
 //            cout << "Mode " << MODES_8[relPosY][relPosX] << endl;
         } 
         // IMPORTANT !!!
         // The RD-cost for PUs 4x4 are stored as if they were a single 8x8 PU, with the total RD-cost
         else if(depth[lenght] == 3 and pCtu->getPartitionSize(i)==SIZE_NxN){
             RDs_4x4 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
-            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
+//            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
 //            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX] << endl;
 //            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX+1] << endl;
 //            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX] << endl;
