@@ -122,9 +122,11 @@ static const Int HALF_PEL =         1;
 static const Int QUARTER_PEL =      2;
 static const Int RESOLUTIONS_PEL =  3;
 
-// Variables to declare max depth of CTUs
-static const Int depthMatrixWidth =  200;
-static const Int depthMatrixHeight = 100;
+// Variables to alloc RD-Cost and depth matrix
+static const Int ctuDepthMatrixWidth =  200; // Number of CTUs
+static const Int ctuDepthMatrixHeight = 100;
+static const Int cuDepthMatrixWidth =  8192; // Number of samples
+static const Int cuDepthMatrixHeight = 4096;
 
 // iagostorch end
 

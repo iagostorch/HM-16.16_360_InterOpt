@@ -45,9 +45,16 @@
 
 // Variables to control the PU size reduction in intra prediction
 float hitRate = 1.00;   // Control the precision of the PU size skip technique
-int statisticalPUSizeReduction = 1; // Enable the reduction of PU size based on PU size distribution statistics
+int statisticalPUSizeReduction = 0; // Enable the reduction of PU size based on PU size distribution statistics
 int extractRDInfo = 1;
 ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
+
+double thresholdRD = 1.05; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
+int rdPUSizeReduction = 0; // Enable teh early termination of CU tree based on current RD_Cost
+int maxCtuDepthMatrixPrevFrame[ctuDepthMatrixHeight][ctuDepthMatrixWidth]; // Maximum depth achieved in each CTU. Indexed CTU-wise
+int **cuDepthMatrixPrevFrame; // Depth achieved in each CU of previous frame. Indexed SAMPLE-wise. Same depth is replicated for samples of the same CU
+double **rdcDenseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Same RD-Cost is replicated for samples of the same CU
+double **rdcSparseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Only the UPPER-LEFT corner of each CU contains the RD-Cost, the other samples are empty
 
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
@@ -72,9 +79,6 @@ int iagoReducedSRNdivisions;
 double *iagoReducedSRBandsDistribution;
 double *iagoReducedSRBandsScaleVerticalSR;
 double *iagoReducedSRBandsScaleHorizontalSR;
-
-// Variables to control the max depth reached in each CTU
-int maxDepthMatrixPrevFrame[depthMatrixHeight][depthMatrixWidth];
 
 ofstream mvFile;
 ofstream finalCuInfo;
@@ -147,9 +151,19 @@ int main(int argc, char* argv[]) {
     }
     
     // Initialize max depth of CTUs with depth 0 (64x64)
-    for (int i=0; i<depthMatrixHeight; i++)
-        for(int j=0; j<depthMatrixWidth; j++)
-            maxDepthMatrixPrevFrame[i][j] = 0;
+    for (int i=0; i<ctuDepthMatrixHeight; i++)
+        for(int j=0; j<ctuDepthMatrixWidth; j++)
+            maxCtuDepthMatrixPrevFrame[i][j] = 0;
+    
+    // Allocation for RD-Cost and depth matrix of previous frame
+    cuDepthMatrixPrevFrame = (int**) malloc(cuDepthMatrixHeight * sizeof(int*));
+    rdcDenseMatrixPrevFrame = (double**) malloc(cuDepthMatrixHeight * sizeof(double*));
+    rdcSparseMatrixPrevFrame = (double**) malloc(cuDepthMatrixHeight * sizeof(double*));
+    for(int k=0; k<cuDepthMatrixHeight; k++){
+        cuDepthMatrixPrevFrame[k] = (int*) malloc(cuDepthMatrixWidth * sizeof(int));
+        rdcDenseMatrixPrevFrame[k] = (double*) malloc(cuDepthMatrixWidth * sizeof(double));
+        rdcSparseMatrixPrevFrame[k] = (double*) malloc(cuDepthMatrixWidth * sizeof(double));
+    }
     
     // iagostorch end
     TAppEncTop cTAppEncTop;
