@@ -55,6 +55,9 @@ using namespace std;
 #include "../../Lib/TLibCommon/CUTOFF_VARIANCE_5B_POLAR_QPs.h"
 #include "../../Lib/TLibCommon/CUTOFF_VARIANCE_5B_MID-POLAR_QPs.h"
 
+// Following file contains the distribution of PU sizes for each CTU row
+#include "../../Lib/TLibCommon/PU_SIZES_DISTRIBUTION.h"
+
 // Variables to track execution time of some encoding steps
 struct timeval  tv3, tv4;
 struct timeval  tv5, tv6;
@@ -99,6 +102,9 @@ extern int extractRDInfo;
 extern ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
 extern int rdPUSizeReduction; // Enable teh early termination of CU tree based on current RD_Cost
 extern double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
+extern int refreshRate; // Frequency in which a frame is encoded without interference
+int mustGeneratePuSizeDistribution = 1; // Used only once to generate the PU size distribution according to CTU row
+extern float minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated 
 
 // These variables hold the RD-cost, depth, number of bits and intra prediction mode for each PU
 double RD_64;
@@ -310,6 +316,17 @@ Void TEncCu::init( TEncTop* pcEncTop )
  */
 Void TEncCu::compressCtu( TComDataCU* pCtu )
 {
+  // Generate PU size distribution depending on video resolution and
+  // set maximum PU depth based on PU size distribution.
+  // The maximum PU depth is not used
+  // Is is only run once
+  if(mustGeneratePuSizeDistribution){
+      mustGeneratePuSizeDistribution = 0;
+      int frameHeight = pCtu->getPic()->getFrameHeightInCtus()*64;
+      generatePuSizeDistribution(frameHeight);
+  }  
+    
+    
   // initialize CU data
   m_ppcBestCU[0]->initCtu( pCtu->getPic(), pCtu->getCtuRsAddr() );
   m_ppcTempCU[0]->initCtu( pCtu->getPic(), pCtu->getCtuRsAddr() );
@@ -325,7 +342,7 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
   if(extractRDInfo){
       getRDCostPerDepth(pCtu);
   }
-          
+   
   int blockDepth;
   int maxDepth = 0;
   int ctuPosY = pCtu->getCtuRsAddr()/pCtu->getPic()->getFrameWidthInCtus();
@@ -990,11 +1007,44 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   if(extractIntermediateCuInfo)
       writeIntermediateCU(rpcBestCU);
   
+  int enableETTechnique = 0; // When enabled, the RD-Cost of current and co-located block in previous frame are compared to perform early termination
+  int frameRow = rpcTempCU->getCUPelY()>>6;
+  int currDepth = (int) rpcTempCU->getDepth(0);
+
+  // When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
+    switch(currDepth){
+      case 0: //64x64
+          if (PUs_Distribution_64x64[frameRow]>=minContribution){
+              enableETTechnique=1;
+//              cout << "Enabled 64x64" << endl;
+          }
+          break;
+      case 1: //32x32
+          if (PUs_Distribution_32x32[frameRow]>=minContribution){
+              enableETTechnique=1;
+//              cout << "Enabled 32x32" << endl;
+          }
+          break;
+      case 2: //16x16
+          if (PUs_Distribution_16x16[frameRow]>=minContribution){
+              enableETTechnique=1;
+//              cout << "Enabled 16x16" << endl;
+          }
+          break;
+      case 3: //8x8
+          if (PUs_Distribution_8x8[frameRow]>=minContribution){
+              enableETTechnique=1;
+//              cout << "Enabled 8x8" << endl;
+          }
+          break;
+  }
+  
   // If the current frame is NOT a reference frame
-  // AND if early termination based on RD-Cost is enabled
-  if(rdPUSizeReduction and (rpcTempCU->getPic()->getPOC()>0)){
-    
-    int currDepth = (int) rpcTempCU->getDepth(0);
+  // AND if early termination based on RD-Cost is enabled for current CU
+  if(rdPUSizeReduction and 
+    enableETTechnique and
+    (rpcTempCU->getPic()->getPOC()%refreshRate != 0)){   
+      
     // In case a CU 8x8 is divided into 4 PUs, it is considered to have depth 4
     if(currDepth == 3){
         if (rpcTempCU->getPartitionSize(0) == SIZE_NxN){
@@ -1007,7 +1057,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
     int xInternalPos = ((float)x/64 - x/64)*64; // Position inside the CTU
     int yInternalPos = ((float)y/64 - y/64)*64; 
     int xId, yId; // Index for rd-cost matrix
-    
+        
     int prevDepth = cuDepthMatrixPrevFrame[y][x];  
     double spatialRDCostPrevFrame; // Holds the RD-Cost covering a region, possibly comprehending multiple CUs
     
@@ -1020,7 +1070,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
     
     
 //    cout << rpcTempCU->getCtuRsAddr() << endl; // CTU index
-    switch (currDepth){ // Depending on the current depth, the current RD-Cost is stored in different variables
+    switch (currDepth){ // Depending on the current depth, the current RD-Cost is stored in different variables (RD_64, RD_32[i][j], RD_16[i][j],...)
         case 0:   // 64x64
             // Depth and RD-Cost of co-located region in previous frame
 //            cout << "\tPrev Depth " << prevDepth << "\tRDC " << spatialRDCostPrevFrame << endl;
@@ -6953,6 +7003,13 @@ void getRDCostPerDepth(TComDataCU* pCtu){
     int yInFrame = pCtu->getCUPelY();
     int ctuIdx = pCtu->getCtuRsAddr();
     int frameIdx = pCtu->getPic()->getPOC();
+
+    // The RD-Cost and Depth matrix is updated only when encoding a reference frame according to refreshRate
+    // The RD-Cost of every frame is written to their specific files (RD64, RD32, ...)
+    int updateRdAndDepthMatrix = 0;
+    if(pCtu->getPic()->getPOC()%refreshRate == 0){
+        updateRdAndDepthMatrix=1;
+    }
     
     // For each CU in the CTU
     while(i < totalSize){
@@ -6974,45 +7031,55 @@ void getRDCostPerDepth(TComDataCU* pCtu){
         // The CU depth and RD-Cost is stored in corresponding matrix
         if(depth[lenght] == 0){
             RDs_64x64 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_64 << endl;
-            fillMatrixInt(cuDepthMatrixPrevFrame, 0, absPelX, absPelX+64, absPelY, absPelY+64);
-//            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_64, absPelX, absPelX+64, absPelY, absPelY+64);
-            rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_64;
-//            cout << "Cost " << RD_64 << endl;
-//            cout << "Mode " << MODES_64 << endl;
+            if(updateRdAndDepthMatrix){
+                fillMatrixInt(cuDepthMatrixPrevFrame, 0, absPelX, absPelX+64, absPelY, absPelY+64);
+    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_64, absPelX, absPelX+64, absPelY, absPelY+64);
+                rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_64;
+    //            cout << "Cost " << RD_64 << endl;
+    //            cout << "Mode " << MODES_64 << endl;            
+            }
         } else if(depth[lenght] == 1){
             RDs_32x32 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_32[relPosY][relPosX] << endl;
-            fillMatrixInt(cuDepthMatrixPrevFrame, 1, absPelX, absPelX+32, absPelY, absPelY+32);
-//            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_32[relPosY][relPosX], absPelX, absPelX+32, absPelY, absPelY+32);
-            rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_32[relPosY][relPosX];
-//            cout << "Cost " << RD_32[relPosY][relPosX] << endl;
-//            cout << "Mode " << MODES_32[relPosY][relPosX] << endl;
+            if(updateRdAndDepthMatrix){
+                fillMatrixInt(cuDepthMatrixPrevFrame, 1, absPelX, absPelX+32, absPelY, absPelY+32);
+    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_32[relPosY][relPosX], absPelX, absPelX+32, absPelY, absPelY+32);
+                rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_32[relPosY][relPosX];
+    //            cout << "Cost " << RD_32[relPosY][relPosX] << endl;
+    //            cout << "Mode " << MODES_32[relPosY][relPosX] << endl;
+            }
         } else if(depth[lenght] == 2){
             RDs_16x16 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_16[relPosY][relPosX] << endl;
-            fillMatrixInt(cuDepthMatrixPrevFrame, 2, absPelX, absPelX+16, absPelY, absPelY+16);
-//            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_16[relPosY][relPosX], absPelX, absPelX+16, absPelY, absPelY+16);
-            rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_16[relPosY][relPosX];
-//            cout << "Cost " << RD_16[relPosY][relPosX] << endl;
-//            cout << "Mode " << MODES_16[relPosY][relPosX] << endl;
+            if(updateRdAndDepthMatrix){
+                fillMatrixInt(cuDepthMatrixPrevFrame, 2, absPelX, absPelX+16, absPelY, absPelY+16);
+    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_16[relPosY][relPosX], absPelX, absPelX+16, absPelY, absPelY+16);
+                rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_16[relPosY][relPosX];
+    //            cout << "Cost " << RD_16[relPosY][relPosX] << endl;
+    //            cout << "Mode " << MODES_16[relPosY][relPosX] << endl;
+            }
         } else if(depth[lenght] == 3 and pCtu->getPartitionSize(i)==SIZE_2Nx2N){
             RDs_8x8 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
-            fillMatrixInt(cuDepthMatrixPrevFrame, 3, absPelX, absPelX+8, absPelY, absPelY+8);
-//            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_8[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
-            rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_8[relPosY][relPosX];
-//            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
-//            cout << "Mode " << MODES_8[relPosY][relPosX] << endl;
+            if(updateRdAndDepthMatrix){
+                fillMatrixInt(cuDepthMatrixPrevFrame, 3, absPelX, absPelX+8, absPelY, absPelY+8);
+    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_8[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
+                rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_8[relPosY][relPosX];
+    //            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
+    //            cout << "Mode " << MODES_8[relPosY][relPosX] << endl;
+            }
         } 
         // IMPORTANT !!!
         // The RD-cost for PUs 4x4 are stored as if they were a single 8x8 PU, with the total RD-cost
         else if(depth[lenght] == 3 and pCtu->getPartitionSize(i)==SIZE_NxN){
             RDs_4x4 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
-            fillMatrixInt(cuDepthMatrixPrevFrame, 4, absPelX, absPelX+8, absPelY, absPelY+8);
-//            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_4[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
-            rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_4[relPosY][relPosX];
-//            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
-//            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX] << endl;
-//            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX+1] << endl;
-//            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX] << endl;
-//            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX+1] << endl;
+            if(updateRdAndDepthMatrix){
+                fillMatrixInt(cuDepthMatrixPrevFrame, 4, absPelX, absPelX+8, absPelY, absPelY+8);
+    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_4[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
+                rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_4[relPosY][relPosX];
+    //            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
+    //            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX] << endl;
+    //            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX+1] << endl;
+    //            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX] << endl;
+    //            cout << "Mode " << (int)MODES_4[2*relPosY+1][2*relPosX+1] << endl;
+            }
         }        
         // The calculation of i generates the index of the next CU
         i = i + ((16>>depth[lenght]) * (16>>depth[lenght]));

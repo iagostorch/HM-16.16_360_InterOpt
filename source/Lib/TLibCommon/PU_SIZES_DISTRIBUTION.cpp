@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include "PU_SIZES_DISTRIBUTION.h"
+//#include "PU_SIZES_DISTRIBUTION.h"
 
 extern float hitRate;
 
-void calculateMaxDepths(int frameHeight){
+void generatePuSizeDistribution(int frameHeight){
     
     switch(frameHeight){
         case 1664:
@@ -13,6 +13,11 @@ void calculateMaxDepths(int frameHeight){
             PUs_Cumulative_32x32 = Res1664_PUs_Cumulative_32x32;
             PUs_Cumulative_64x64 = Res1664_PUs_Cumulative_64x64;
             MAX_DEPTH_PER_ROW = Res1664_MAX_DEPTH_PER_ROW;
+            PUs_Distribution_4x4 = Res1664_PUs_Distribution_4x4;
+            PUs_Distribution_8x8 = Res1664_PUs_Distribution_8x8;
+            PUs_Distribution_16x16 = Res1664_PUs_Distribution_16x16;
+            PUs_Distribution_32x32 = Res1664_PUs_Distribution_32x32;
+            PUs_Distribution_64x64 = Res1664_PUs_Distribution_64x64;
             break;
         case 2048:
             PUs_Cumulative_4x4 = Res2048_PUs_Cumulative_4x4;

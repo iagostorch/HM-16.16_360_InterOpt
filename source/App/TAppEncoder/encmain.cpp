@@ -50,11 +50,13 @@ int extractRDInfo = 1;
 ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
 
 double thresholdRD = 1.05; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
-int rdPUSizeReduction = 0; // Enable teh early termination of CU tree based on current RD_Cost
+int rdPUSizeReduction = 1; // Enable teh early termination of CU tree based on current RD_Cost
 int maxCtuDepthMatrixPrevFrame[ctuDepthMatrixHeight][ctuDepthMatrixWidth]; // Maximum depth achieved in each CTU. Indexed CTU-wise
 int **cuDepthMatrixPrevFrame; // Depth achieved in each CU of previous frame. Indexed SAMPLE-wise. Same depth is replicated for samples of the same CU
 double **rdcDenseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Same RD-Cost is replicated for samples of the same CU
 double **rdcSparseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Only the UPPER-LEFT corner of each CU contains the RD-Cost, the other samples are empty
+int refreshRate = 4; // Frequency in which a frame is encoded without interference
+float minContribution = 0.30; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
 
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance

@@ -2,7 +2,9 @@
 #include <array>
 #include <algorithm>
 
-void calculateMaxDepths(int frameHeight);
+void generatePuSizeDistribution(int frameHeight); // Ajdust the pointers of PU size distribution according to video resolution
+
+extern float hitRate;
 
 // These arrays store the accumulated occurrence rate of each PU size, starting with 64x64 and accumulating in direction of 4x4
 // 1664p
@@ -23,6 +25,16 @@ float Res2048_PUs_Cumulative_64x64[32] = {0.50366,0.45349,0.43664,0.40973,0.3812
 
 int Res2048_MAX_DEPTH_PER_ROW[32] = {4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 
+
+// These arrays store the occurrence rate of each PU size
+// 1664p
+float Res1664_PUs_Distribution_4x4[26] = {0.000886639210973,0.004854311015271,0.011479470093326,0.02040905154129,0.027278461715215,0.03603405154129,0.045562053697681,0.060391773897059,0.069334059495192,0.081399025205034,0.093974145397342,0.110519809636595,0.134017184848699,0.142684618919683,0.120625243035916,0.098367571938631,0.087727569994344,0.078078823175905,0.068735749257636,0.059211724052602,0.052863404977376,0.041415308611425,0.028744189232183,0.018678193933824,0.007831500989819,0.00088194107242};
+float Res1664_PUs_Distribution_8x8[26] = {0.011144080528846,0.030600210336539,0.049409422723416,0.06926059636595,0.082074885994061,0.094470932904412,0.110555823140554,0.134600360576923,0.151160496500283,0.165948348239536,0.175015355451075,0.196663448281957,0.226382984834559,0.232573882918552,0.211631809424491,0.188033463836256,0.177751608455882,0.17379520468043,0.159628751590781,0.143386550834276,0.141442926329186,0.129153483809389,0.10553668958569,0.079089410704186,0.047543127828054,0.014954195858768};
+float Res1664_PUs_Distribution_16x16[26] = {0.06929881928733,0.121599706589367,0.147483915441176,0.170670425622172,0.179076375141403,0.188674526300905,0.218981105062217,0.234004259756787,0.254035279977376,0.263676735718326,0.265548112273756,0.274902785633484,0.281280048076923,0.270354478930995,0.276596525028281,0.266877739677602,0.257447504242081,0.260323723840498,0.255791324943439,0.25004242081448,0.255912842901584,0.268963871606335,0.2605915052319,0.227170531674208,0.184149197539593,0.11230273654273};
+float Res1664_PUs_Distribution_32x32[26] = {0.415008130656109,0.394805217760181,0.364704114819004,0.353347709276018,0.339143806561086,0.345964720022624,0.361630373303167,0.333743990384615,0.328227516968326,0.323131716628959,0.31602092760181,0.29217159219457,0.252798006221719,0.247521917420814,0.266096931561086,0.291100466628959,0.289933894230769,0.291245404411765,0.302248303167421,0.321786623303167,0.322101244343891,0.344920107466063,0.380608385180995,0.40623409219457,0.437554793552036,0.521569783573807};
+float Res1664_PUs_Distribution_64x64[26] = {0.503662330316742,0.448140554298643,0.426923076923077,0.38631221719457,0.372426470588235,0.334855769230769,0.26327064479638,0.237259615384615,0.197242647058824,0.165844174208145,0.149441459276018,0.125742364253394,0.1055217760181,0.106865101809955,0.125049490950226,0.155620757918552,0.187139423076923,0.196556843891403,0.213595871040724,0.225572680995475,0.227679581447964,0.215547228506787,0.224519230769231,0.268827771493213,0.322921380090498,0.350291342952275};
+
+
 // These variables are assigned according to the video resolution
 float *PUs_Cumulative_4x4;
 float *PUs_Cumulative_8x8;
@@ -30,4 +42,70 @@ float *PUs_Cumulative_16x16;
 float *PUs_Cumulative_32x32;
 float *PUs_Cumulative_64x64;
 
+float *PUs_Distribution_4x4;
+float *PUs_Distribution_8x8;
+float *PUs_Distribution_16x16;
+float *PUs_Distribution_32x32;
+float *PUs_Distribution_64x64;
+
 int *MAX_DEPTH_PER_ROW;
+
+// Ajdust the pointers of PU size distribution according to video resolution.
+// Defines a maximum depth for each CTU row (MAX_DEPTH_PER_ROW) depending on hitRate
+// The MAX_DEPTH_PER_ROW matrix is used only when statisticalPUSizeReduction is TRUE
+void generatePuSizeDistribution(int frameHeight){
+    
+    switch(frameHeight){
+        case 1664:
+            PUs_Cumulative_4x4 = Res1664_PUs_Cumulative_4x4;
+            PUs_Cumulative_8x8 = Res1664_PUs_Cumulative_8x8;
+            PUs_Cumulative_16x16 = Res1664_PUs_Cumulative_16x16;
+            PUs_Cumulative_32x32 = Res1664_PUs_Cumulative_32x32;
+            PUs_Cumulative_64x64 = Res1664_PUs_Cumulative_64x64;
+            MAX_DEPTH_PER_ROW = Res1664_MAX_DEPTH_PER_ROW;
+            PUs_Distribution_4x4 = Res1664_PUs_Distribution_4x4;
+            PUs_Distribution_8x8 = Res1664_PUs_Distribution_8x8;
+            PUs_Distribution_16x16 = Res1664_PUs_Distribution_16x16;
+            PUs_Distribution_32x32 = Res1664_PUs_Distribution_32x32;
+            PUs_Distribution_64x64 = Res1664_PUs_Distribution_64x64;
+            break;
+        case 2048:
+            PUs_Cumulative_4x4 = Res2048_PUs_Cumulative_4x4;
+            PUs_Cumulative_8x8 = Res2048_PUs_Cumulative_8x8;
+            PUs_Cumulative_16x16 = Res2048_PUs_Cumulative_16x16;
+            PUs_Cumulative_32x32 = Res2048_PUs_Cumulative_32x32;
+            PUs_Cumulative_64x64 = Res2048_PUs_Cumulative_64x64;
+            MAX_DEPTH_PER_ROW = Res2048_MAX_DEPTH_PER_ROW;
+            cout << "ERROR - MUST ADD SUPPORT FOR 2048p PUs DISTRIBUTION" << endl;
+            break;
+        default:
+            cout << "ERROR -- Resolution " << frameHeight << " is not supported" << endl;
+            break;
+    }
+    
+    // Number of CTU rows
+    int numRows = frameHeight/64;
+    
+    for(int i=0; i<numRows; i++){
+  
+        if(PUs_Cumulative_64x64[i] >= hitRate){
+            MAX_DEPTH_PER_ROW[i] = 0;
+        }
+        else if(PUs_Cumulative_32x32[i] >= hitRate){
+            MAX_DEPTH_PER_ROW[i] = 1;
+        }
+        else if(PUs_Cumulative_16x16[i] >= hitRate){
+            MAX_DEPTH_PER_ROW[i] = 2;
+        }
+        else if(PUs_Cumulative_8x8[i] >= hitRate){
+            MAX_DEPTH_PER_ROW[i] = 3;
+        }
+        else if(PUs_Cumulative_4x4[i] >= hitRate){
+            MAX_DEPTH_PER_ROW[i] = 4;
+        }
+        else{
+            cout << "ERROR -- UNREACHABLE HIT RATE FOR INTRA PU SIZES" << endl;
+        }    
+        // cout << "Row " << i << " Max " << MAX_DEPTH_PER_ROW[i];
+    }
+}
