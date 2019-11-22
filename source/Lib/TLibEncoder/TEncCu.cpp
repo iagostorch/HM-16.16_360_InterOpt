@@ -104,7 +104,7 @@ extern int rdPUSizeReduction; // Enable teh early termination of CU tree based o
 extern double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
 extern int refreshRate; // Frequency in which a frame is encoded without interference
 int mustGeneratePuSizeDistribution = 1; // Used only once to generate the PU size distribution according to CTU row
-extern float minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated 
+extern double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated 
 
 // These variables hold the RD-cost, depth, number of bits and intra prediction mode for each PU
 double RD_64;
@@ -1012,7 +1012,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   int currDepth = (int) rpcTempCU->getDepth(0);
 
   // When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
-    switch(currDepth){
+  switch(currDepth){
       case 0: //64x64
           if (PUs_Distribution_64x64[frameRow]>=minContribution){
               enableETTechnique=1;

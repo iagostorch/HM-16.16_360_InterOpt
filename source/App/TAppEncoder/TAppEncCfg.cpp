@@ -74,6 +74,12 @@ extern int iagoReducedSRNdivisions;
 extern double *iagoReducedSRBandsDistribution;
 extern double *iagoReducedSRBandsScaleVerticalSR;
 extern double *iagoReducedSRBandsScaleHorizontalSR;
+
+// Variables to control the Early Termination of Intra PU sizes evaluation
+extern int rdPUSizeReduction;
+extern double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
+extern int refreshRate; // Frequency in which a frame is encoded without interference
+extern double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
 // iagostorch end
 
 using namespace std;
@@ -741,6 +747,11 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   ("IagoReducedSRBandsDistribution",                  iagoReducedSRBandsDistribution_cfg,    iagoReducedSRBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order")
   ("IagoReducedSRBandsScaleVerticalSR",               iagoReducedSRBandsScaleVerticalSR_cfg,          iagoReducedSRBandsScaleVerticalSR_cfg, "Array containing the vertical scale factor of search range in raster step for each band, in a top-bottom order")
   ("IagoReducedSRBandsScaleHorizontalSR",             iagoReducedSRBandsScaleHorizontalSR_cfg,            iagoReducedSRBandsScaleHorizontalSR_cfg,   "Array containing the horizontal scale factor of search range in raster step for each band, in a top-bottom order")
+  // Encoding parameters for Early Termination of Intra PU sizes evaluation
+  ("IagoRdPUSizeReduction",                           rdPUSizeReduction,                                        0, "Enable the Early Termination of Intra PU sizes evaluation")
+  ("IagoRdPUSizeReductionRefreshRate",                refreshRate,                                              4, "Frequency in which a frame will be encoded without interference")
+  ("IagoRdPUSizeReductionThreshold",                  thresholdRD,                                            1.0, "Threshold to admit when comparing RD-Cost of current CU with co-located CU in reference frame to perform Early Termination. Greater values are more aggressive")
+  ("IagoRdPUSizeReductionMinContribution",            minContribution,                                       0.30, "Defines the minimum contribution a PU size must have in a CTU row to be eligible to Early Termination. Smaller values are more aggressive") 
   // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
