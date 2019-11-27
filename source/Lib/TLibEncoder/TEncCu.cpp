@@ -1039,19 +1039,20 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           break;
   }
   
-  // If the current frame is NOT a reference frame
-  // AND if early termination based on RD-Cost is enabled for current CU
-  if(rdPUSizeReduction and 
-    enableETTechnique and
-    (rpcTempCU->getPic()->getPOC()%refreshRate != 0)){   
-      
-    // In case a CU 8x8 is divided into 4 PUs, it is considered to have depth 4
+  // In case a CU 8x8 is divided into 4 PUs, it is considered to have depth 4
     if(currDepth == 3){
         if (rpcTempCU->getPartitionSize(0) == SIZE_NxN){
             currDepth = 4;
         }
     }
-    
+  
+  // If the current frame is NOT a reference frame
+  // AND if early termination based on RD-Cost is enabled for current CU
+  if(rdPUSizeReduction and 
+    enableETTechnique and
+    (rpcTempCU->getPic()->getPOC()%refreshRate != 0) and
+    currDepth < 4){   
+      
     int x = rpcTempCU->getCUPelX(); // Position inside the frame
     int y = rpcTempCU->getCUPelY();
     int xInternalPos = ((float)x/64 - x/64)*64; // Position inside the CTU
@@ -1059,16 +1060,35 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
     int xId, yId; // Index for rd-cost matrix
         
     int prevDepth = cuDepthMatrixPrevFrame[y][x];  
-    double spatialRDCostPrevFrame; // Holds the RD-Cost covering a region, possibly comprehending multiple CUs
-    
-    if(currDepth <= prevDepth){ // If current CU is bigger or equal to co-located in previous frame, sum RD-Cost of sub-partitions
+    double spatialRDCostPrevFrame; // Holds the RD-Cost covering a region, possibly comprehending multiple or fractional CUs
+//    cout << "\nPrev " << prevDepth << "\tCurr " << currDepth << endl;
+//    cout << "Type(prev) " << typeid(prevDepth).name() << "\tType(curr) " << typeid(currDepth).name() << endl;
+    if(currDepth < prevDepth){ // If current CU is bigger than co-located in previous frame, sum RD-Cost of sub-partitions
         spatialRDCostPrevFrame = sumMatrix(rdcSparseMatrixPrevFrame,x,x+(64>>currDepth),y,y+(64>>currDepth));
     }
-    else{ // If current CU is smaller than co-located in previous frame, it is not possible to compare the RD-Costs
-        spatialRDCostPrevFrame = 0;
+    else if(currDepth == prevDepth){ // If current CU has the same size as co-located in previous frame, index the RD-cost directly
+        spatialRDCostPrevFrame = rdcSparseMatrixPrevFrame[y][x];
+    }
+    else{ // If current CU is smaller than co-located in previous frame, we index the the co-located RD 
+          //and divide it into 4, 16 or 64 parts depending on the size difference to scale the RD properly
+        int depthDiff = currDepth-prevDepth;
+        spatialRDCostPrevFrame = rdcDenseMatrixPrevFrame[y][x];
+        if (depthDiff == 1){
+            spatialRDCostPrevFrame = spatialRDCostPrevFrame/4;
+        }
+        else if (depthDiff == 2){
+            spatialRDCostPrevFrame = spatialRDCostPrevFrame/16;
+        }
+        else if (depthDiff == 3){
+            spatialRDCostPrevFrame = spatialRDCostPrevFrame/64;
+        }
+        else{
+            cout << "Depth difference " << depthDiff << endl;
+            cout << "ERROR - INVALID DEPTH DIFFERENCE WHEN COMPARING CURRENT DEPTH AND DEPTH OF REFERENCE FRAME" << endl;
+        }
     }
     
-    
+  
 //    cout << rpcTempCU->getCtuRsAddr() << endl; // CTU index
     switch (currDepth){ // Depending on the current depth, the current RD-Cost is stored in different variables (RD_64, RD_32[i][j], RD_16[i][j],...)
         case 0:   // 64x64
@@ -7033,7 +7053,7 @@ void getRDCostPerDepth(TComDataCU* pCtu){
             RDs_64x64 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_64 << endl;
             if(updateRdAndDepthMatrix){
                 fillMatrixInt(cuDepthMatrixPrevFrame, 0, absPelX, absPelX+64, absPelY, absPelY+64);
-    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_64, absPelX, absPelX+64, absPelY, absPelY+64);
+                fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_64, absPelX, absPelX+64, absPelY, absPelY+64);
                 rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_64;
     //            cout << "Cost " << RD_64 << endl;
     //            cout << "Mode " << MODES_64 << endl;            
@@ -7042,7 +7062,7 @@ void getRDCostPerDepth(TComDataCU* pCtu){
             RDs_32x32 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_32[relPosY][relPosX] << endl;
             if(updateRdAndDepthMatrix){
                 fillMatrixInt(cuDepthMatrixPrevFrame, 1, absPelX, absPelX+32, absPelY, absPelY+32);
-    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_32[relPosY][relPosX], absPelX, absPelX+32, absPelY, absPelY+32);
+                fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_32[relPosY][relPosX], absPelX, absPelX+32, absPelY, absPelY+32);
                 rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_32[relPosY][relPosX];
     //            cout << "Cost " << RD_32[relPosY][relPosX] << endl;
     //            cout << "Mode " << MODES_32[relPosY][relPosX] << endl;
@@ -7051,7 +7071,7 @@ void getRDCostPerDepth(TComDataCU* pCtu){
             RDs_16x16 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_16[relPosY][relPosX] << endl;
             if(updateRdAndDepthMatrix){
                 fillMatrixInt(cuDepthMatrixPrevFrame, 2, absPelX, absPelX+16, absPelY, absPelY+16);
-    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_16[relPosY][relPosX], absPelX, absPelX+16, absPelY, absPelY+16);
+                fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_16[relPosY][relPosX], absPelX, absPelX+16, absPelY, absPelY+16);
                 rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_16[relPosY][relPosX];
     //            cout << "Cost " << RD_16[relPosY][relPosX] << endl;
     //            cout << "Mode " << MODES_16[relPosY][relPosX] << endl;
@@ -7060,7 +7080,7 @@ void getRDCostPerDepth(TComDataCU* pCtu){
             RDs_8x8 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
             if(updateRdAndDepthMatrix){
                 fillMatrixInt(cuDepthMatrixPrevFrame, 3, absPelX, absPelX+8, absPelY, absPelY+8);
-    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_8[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
+                fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_8[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
                 rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_8[relPosY][relPosX];
     //            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
     //            cout << "Mode " << MODES_8[relPosY][relPosX] << endl;
@@ -7072,7 +7092,7 @@ void getRDCostPerDepth(TComDataCU* pCtu){
             RDs_4x4 << frameIdx << "," << ctuIdx << "," << yInFrame << "," << xInFrame << "," << RD_8[relPosY][relPosX] << endl;
             if(updateRdAndDepthMatrix){
                 fillMatrixInt(cuDepthMatrixPrevFrame, 4, absPelX, absPelX+8, absPelY, absPelY+8);
-    //            fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_4[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
+                fillMatrixDouble(rdcDenseMatrixPrevFrame, RD_4[relPosY][relPosX], absPelX, absPelX+8, absPelY, absPelY+8);
                 rdcSparseMatrixPrevFrame[absPelY][absPelX] = RD_4[relPosY][relPosX];
     //            cout << "Cost " << RD_8[relPosY][relPosX] << endl;
     //            cout << "Mode " << (int)MODES_4[2*relPosY][2*relPosX] << endl;
