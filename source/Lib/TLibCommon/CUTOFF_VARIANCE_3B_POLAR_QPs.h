@@ -1,4 +1,238 @@
 // Cutoff variance for POLAR regions in 3 BANDS system
+// 5% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_5_VAR_64 = 2.0;
+static const int _3B_QPany_POLAR_CUTOFF_5_VAR_32 = 1.0;
+static const int _3B_QPany_POLAR_CUTOFF_5_VAR_16 = 1.0;
+static const int _3B_QPany_POLAR_CUTOFF_5_VAR_8 = 1.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_5_VAR_64 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_5_VAR_32 = 1.0;
+static const int _3B_QP22_POLAR_CUTOFF_5_VAR_16 = 1.0;
+static const int _3B_QP22_POLAR_CUTOFF_5_VAR_8 = 1.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_5_VAR_64 = 2.0;
+static const int _3B_QP27_POLAR_CUTOFF_5_VAR_32 = 1.0;
+static const int _3B_QP27_POLAR_CUTOFF_5_VAR_16 = 1.0;
+static const int _3B_QP27_POLAR_CUTOFF_5_VAR_8 = 1.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_5_VAR_64 = 2.0;
+static const int _3B_QP32_POLAR_CUTOFF_5_VAR_32 = 1.0;
+static const int _3B_QP32_POLAR_CUTOFF_5_VAR_16 = 1.0;
+static const int _3B_QP32_POLAR_CUTOFF_5_VAR_8 = 1.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_5_VAR_64 = 2.0;
+static const int _3B_QP37_POLAR_CUTOFF_5_VAR_32 = 1.0;
+static const int _3B_QP37_POLAR_CUTOFF_5_VAR_16 = 1.0;
+static const int _3B_QP37_POLAR_CUTOFF_5_VAR_8 = 1.0;
+
+// 10% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_10_VAR_64 = 3.0;
+static const int _3B_QPany_POLAR_CUTOFF_10_VAR_32 = 2.0;
+static const int _3B_QPany_POLAR_CUTOFF_10_VAR_16 = 1.0;
+static const int _3B_QPany_POLAR_CUTOFF_10_VAR_8 = 1.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_10_VAR_64 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_10_VAR_32 = 1.0;
+static const int _3B_QP22_POLAR_CUTOFF_10_VAR_16 = 1.0;
+static const int _3B_QP22_POLAR_CUTOFF_10_VAR_8 = 1.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_10_VAR_64 = 3.0;
+static const int _3B_QP27_POLAR_CUTOFF_10_VAR_32 = 2.0;
+static const int _3B_QP27_POLAR_CUTOFF_10_VAR_16 = 1.0;
+static const int _3B_QP27_POLAR_CUTOFF_10_VAR_8 = 1.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_10_VAR_64 = 4.0;
+static const int _3B_QP32_POLAR_CUTOFF_10_VAR_32 = 2.0;
+static const int _3B_QP32_POLAR_CUTOFF_10_VAR_16 = 1.0;
+static const int _3B_QP32_POLAR_CUTOFF_10_VAR_8 = 1.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_10_VAR_64 = 4.0;
+static const int _3B_QP37_POLAR_CUTOFF_10_VAR_32 = 2.0;
+static const int _3B_QP37_POLAR_CUTOFF_10_VAR_16 = 1.0;
+static const int _3B_QP37_POLAR_CUTOFF_10_VAR_8 = 1.0;
+
+// 15% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_15_VAR_64 = 5.0;
+static const int _3B_QPany_POLAR_CUTOFF_15_VAR_32 = 2.0;
+static const int _3B_QPany_POLAR_CUTOFF_15_VAR_16 = 1.0;
+static const int _3B_QPany_POLAR_CUTOFF_15_VAR_8 = 1.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_15_VAR_64 = 3.0;
+static const int _3B_QP22_POLAR_CUTOFF_15_VAR_32 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_15_VAR_16 = 1.0;
+static const int _3B_QP22_POLAR_CUTOFF_15_VAR_8 = 1.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_15_VAR_64 = 6.0;
+static const int _3B_QP27_POLAR_CUTOFF_15_VAR_32 = 2.0;
+static const int _3B_QP27_POLAR_CUTOFF_15_VAR_16 = 1.0;
+static const int _3B_QP27_POLAR_CUTOFF_15_VAR_8 = 1.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_15_VAR_64 = 6.0;
+static const int _3B_QP32_POLAR_CUTOFF_15_VAR_32 = 2.0;
+static const int _3B_QP32_POLAR_CUTOFF_15_VAR_16 = 1.0;
+static const int _3B_QP32_POLAR_CUTOFF_15_VAR_8 = 1.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_15_VAR_64 = 7.0;
+static const int _3B_QP37_POLAR_CUTOFF_15_VAR_32 = 2.0;
+static const int _3B_QP37_POLAR_CUTOFF_15_VAR_16 = 1.0;
+static const int _3B_QP37_POLAR_CUTOFF_15_VAR_8 = 1.0;
+
+// 20% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_20_VAR_64 = 9.0;
+static const int _3B_QPany_POLAR_CUTOFF_20_VAR_32 = 3.0;
+static const int _3B_QPany_POLAR_CUTOFF_20_VAR_16 = 2.0;
+static const int _3B_QPany_POLAR_CUTOFF_20_VAR_8 = 1.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_20_VAR_64 = 4.0;
+static const int _3B_QP22_POLAR_CUTOFF_20_VAR_32 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_20_VAR_16 = 1.0;
+static const int _3B_QP22_POLAR_CUTOFF_20_VAR_8 = 1.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_20_VAR_64 = 9.0;
+static const int _3B_QP27_POLAR_CUTOFF_20_VAR_32 = 3.0;
+static const int _3B_QP27_POLAR_CUTOFF_20_VAR_16 = 2.0;
+static const int _3B_QP27_POLAR_CUTOFF_20_VAR_8 = 1.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_20_VAR_64 = 10.0;
+static const int _3B_QP32_POLAR_CUTOFF_20_VAR_32 = 3.0;
+static const int _3B_QP32_POLAR_CUTOFF_20_VAR_16 = 2.0;
+static const int _3B_QP32_POLAR_CUTOFF_20_VAR_8 = 1.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_20_VAR_64 = 11.0;
+static const int _3B_QP37_POLAR_CUTOFF_20_VAR_32 = 4.0;
+static const int _3B_QP37_POLAR_CUTOFF_20_VAR_16 = 2.0;
+static const int _3B_QP37_POLAR_CUTOFF_20_VAR_8 = 1.0;
+
+// 25% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_25_VAR_64 = 12.0;
+static const int _3B_QPany_POLAR_CUTOFF_25_VAR_32 = 4.0;
+static const int _3B_QPany_POLAR_CUTOFF_25_VAR_16 = 2.0;
+static const int _3B_QPany_POLAR_CUTOFF_25_VAR_8 = 1.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_25_VAR_64 = 5.0;
+static const int _3B_QP22_POLAR_CUTOFF_25_VAR_32 = 3.0;
+static const int _3B_QP22_POLAR_CUTOFF_25_VAR_16 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_25_VAR_8 = 1.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_25_VAR_64 = 12.0;
+static const int _3B_QP27_POLAR_CUTOFF_25_VAR_32 = 4.0;
+static const int _3B_QP27_POLAR_CUTOFF_25_VAR_16 = 2.0;
+static const int _3B_QP27_POLAR_CUTOFF_25_VAR_8 = 1.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_25_VAR_64 = 15.0;
+static const int _3B_QP32_POLAR_CUTOFF_25_VAR_32 = 5.0;
+static const int _3B_QP32_POLAR_CUTOFF_25_VAR_16 = 2.0;
+static const int _3B_QP32_POLAR_CUTOFF_25_VAR_8 = 1.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_25_VAR_64 = 16.0;
+static const int _3B_QP37_POLAR_CUTOFF_25_VAR_32 = 5.0;
+static const int _3B_QP37_POLAR_CUTOFF_25_VAR_16 = 2.0;
+static const int _3B_QP37_POLAR_CUTOFF_25_VAR_8 = 1.0;
+
+// 30% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_30_VAR_64 = 17.0;
+static const int _3B_QPany_POLAR_CUTOFF_30_VAR_32 = 6.0;
+static const int _3B_QPany_POLAR_CUTOFF_30_VAR_16 = 3.0;
+static const int _3B_QPany_POLAR_CUTOFF_30_VAR_8 = 1.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_30_VAR_64 = 7.0;
+static const int _3B_QP22_POLAR_CUTOFF_30_VAR_32 = 3.0;
+static const int _3B_QP22_POLAR_CUTOFF_30_VAR_16 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_30_VAR_8 = 1.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_30_VAR_64 = 17.0;
+static const int _3B_QP27_POLAR_CUTOFF_30_VAR_32 = 6.0;
+static const int _3B_QP27_POLAR_CUTOFF_30_VAR_16 = 3.0;
+static const int _3B_QP27_POLAR_CUTOFF_30_VAR_8 = 2.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_30_VAR_64 = 20.0;
+static const int _3B_QP32_POLAR_CUTOFF_30_VAR_32 = 7.0;
+static const int _3B_QP32_POLAR_CUTOFF_30_VAR_16 = 3.0;
+static const int _3B_QP32_POLAR_CUTOFF_30_VAR_8 = 2.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_30_VAR_64 = 23.0;
+static const int _3B_QP37_POLAR_CUTOFF_30_VAR_32 = 7.0;
+static const int _3B_QP37_POLAR_CUTOFF_30_VAR_16 = 3.0;
+static const int _3B_QP37_POLAR_CUTOFF_30_VAR_8 = 2.0;
+
+// 35% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_35_VAR_64 = 24.0;
+static const int _3B_QPany_POLAR_CUTOFF_35_VAR_32 = 9.0;
+static const int _3B_QPany_POLAR_CUTOFF_35_VAR_16 = 4.0;
+static const int _3B_QPany_POLAR_CUTOFF_35_VAR_8 = 2.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_35_VAR_64 = 9.0;
+static const int _3B_QP22_POLAR_CUTOFF_35_VAR_32 = 4.0;
+static const int _3B_QP22_POLAR_CUTOFF_35_VAR_16 = 2.0;
+static const int _3B_QP22_POLAR_CUTOFF_35_VAR_8 = 2.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_35_VAR_64 = 23.0;
+static const int _3B_QP27_POLAR_CUTOFF_35_VAR_32 = 9.0;
+static const int _3B_QP27_POLAR_CUTOFF_35_VAR_16 = 4.0;
+static const int _3B_QP27_POLAR_CUTOFF_35_VAR_8 = 2.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_35_VAR_64 = 31.0;
+static const int _3B_QP32_POLAR_CUTOFF_35_VAR_32 = 10.0;
+static const int _3B_QP32_POLAR_CUTOFF_35_VAR_16 = 4.0;
+static const int _3B_QP32_POLAR_CUTOFF_35_VAR_8 = 2.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_35_VAR_64 = 36.0;
+static const int _3B_QP37_POLAR_CUTOFF_35_VAR_32 = 11.0;
+static const int _3B_QP37_POLAR_CUTOFF_35_VAR_16 = 4.0;
+static const int _3B_QP37_POLAR_CUTOFF_35_VAR_8 = 2.0;
+
+// 40% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_40_VAR_64 = 37.0;
+static const int _3B_QPany_POLAR_CUTOFF_40_VAR_32 = 13.0;
+static const int _3B_QPany_POLAR_CUTOFF_40_VAR_16 = 5.0;
+static const int _3B_QPany_POLAR_CUTOFF_40_VAR_8 = 3.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_40_VAR_64 = 12.0;
+static const int _3B_QP22_POLAR_CUTOFF_40_VAR_32 = 5.0;
+static const int _3B_QP22_POLAR_CUTOFF_40_VAR_16 = 3.0;
+static const int _3B_QP22_POLAR_CUTOFF_40_VAR_8 = 2.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_40_VAR_64 = 34.0;
+static const int _3B_QP27_POLAR_CUTOFF_40_VAR_32 = 13.0;
+static const int _3B_QP27_POLAR_CUTOFF_40_VAR_16 = 5.0;
+static const int _3B_QP27_POLAR_CUTOFF_40_VAR_8 = 3.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_40_VAR_64 = 44.0;
+static const int _3B_QP32_POLAR_CUTOFF_40_VAR_32 = 16.0;
+static const int _3B_QP32_POLAR_CUTOFF_40_VAR_16 = 6.0;
+static const int _3B_QP32_POLAR_CUTOFF_40_VAR_8 = 3.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_40_VAR_64 = 53.0;
+static const int _3B_QP37_POLAR_CUTOFF_40_VAR_32 = 18.0;
+static const int _3B_QP37_POLAR_CUTOFF_40_VAR_16 = 6.0;
+static const int _3B_QP37_POLAR_CUTOFF_40_VAR_8 = 3.0;
+
+// 45% of skips occur in CUs with variance lower than these tresholds
+static const int _3B_QPany_POLAR_CUTOFF_45_VAR_64 = 53.0;
+static const int _3B_QPany_POLAR_CUTOFF_45_VAR_32 = 20.0;
+static const int _3B_QPany_POLAR_CUTOFF_45_VAR_16 = 7.0;
+static const int _3B_QPany_POLAR_CUTOFF_45_VAR_8 = 4.0;
+
+static const int _3B_QP22_POLAR_CUTOFF_45_VAR_64 = 16.0;
+static const int _3B_QP22_POLAR_CUTOFF_45_VAR_32 = 8.0;
+static const int _3B_QP22_POLAR_CUTOFF_45_VAR_16 = 5.0;
+static const int _3B_QP22_POLAR_CUTOFF_45_VAR_8 = 3.0;
+
+static const int _3B_QP27_POLAR_CUTOFF_45_VAR_64 = 47.0;
+static const int _3B_QP27_POLAR_CUTOFF_45_VAR_32 = 19.0;
+static const int _3B_QP27_POLAR_CUTOFF_45_VAR_16 = 7.0;
+static const int _3B_QP27_POLAR_CUTOFF_45_VAR_8 = 4.0;
+
+static const int _3B_QP32_POLAR_CUTOFF_45_VAR_64 = 64.0;
+static const int _3B_QP32_POLAR_CUTOFF_45_VAR_32 = 24.0;
+static const int _3B_QP32_POLAR_CUTOFF_45_VAR_16 = 8.0;
+static const int _3B_QP32_POLAR_CUTOFF_45_VAR_8 = 4.0;
+
+static const int _3B_QP37_POLAR_CUTOFF_45_VAR_64 = 75.0;
+static const int _3B_QP37_POLAR_CUTOFF_45_VAR_32 = 26.0;
+static const int _3B_QP37_POLAR_CUTOFF_45_VAR_16 = 9.0;
+static const int _3B_QP37_POLAR_CUTOFF_45_VAR_8 = 4.0;
+
 // 50% of skips occur in CUs with variance lower than these tresholds
 static const float _3B_QPany_POLAR_CUTOFF_50_VAR_64 = 80.0;
 static const float _3B_QPany_POLAR_CUTOFF_50_VAR_32 = 30.0;

@@ -2144,7 +2144,187 @@ float getCurrentCutoffVariance_3BandsPolar(int currDepth){
         
     if(iagoEarlySkipAdaptiveQP){
         if(keyQP == 22){
-            if(iagoEarlySkipIntegral[0] == 0.50){
+            if(iagoEarlySkipIntegral[0] == 0.05){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_5_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_5_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_5_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_5_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_10_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_10_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_10_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_10_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_15_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_15_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_15_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_15_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_20_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_20_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_20_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_20_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_25_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_25_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_25_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_25_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_30_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_30_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_30_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_30_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_35_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_35_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_35_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_35_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_40_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_40_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_40_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_40_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_45_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_45_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_45_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP22_POLAR_CUTOFF_45_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.50){
                 // Selects appropriate cutoff variance
                 switch(currDepth){
                     case 0:
@@ -2330,7 +2510,187 @@ float getCurrentCutoffVariance_3BandsPolar(int currDepth){
             }
         }
         else if(keyQP == 27){
-            if(iagoEarlySkipIntegral[0] == 0.50){
+            if(iagoEarlySkipIntegral[0] == 0.05){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_5_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_5_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_5_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_5_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_10_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_10_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_10_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_10_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_15_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_15_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_15_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_15_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_20_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_20_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_20_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_20_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_25_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_25_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_25_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_25_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_30_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_30_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_30_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_30_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_35_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_35_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_35_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_35_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_40_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_40_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_40_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_40_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_45_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_45_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_45_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP27_POLAR_CUTOFF_45_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.50){
             // Selects appropriate cutoff variance
                 switch(currDepth){
                     case 0:
@@ -2516,7 +2876,187 @@ float getCurrentCutoffVariance_3BandsPolar(int currDepth){
             }            
         }
         else if(keyQP == 32){
-            if(iagoEarlySkipIntegral[0] == 0.50){
+            if(iagoEarlySkipIntegral[0] == 0.05){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_5_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_5_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_5_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_5_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_10_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_10_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_10_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_10_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_15_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_15_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_15_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_15_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_20_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_20_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_20_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_20_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_25_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_25_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_25_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_25_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_30_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_30_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_30_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_30_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_35_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_35_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_35_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_35_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_40_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_40_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_40_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_40_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_45_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_45_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_45_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP32_POLAR_CUTOFF_45_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.50){
                 // Selects appropriate cutoff variance
                 switch(currDepth){
                     case 0:
@@ -2702,7 +3242,187 @@ float getCurrentCutoffVariance_3BandsPolar(int currDepth){
             }            
         }
         else if(keyQP == 37){
-            if(iagoEarlySkipIntegral[0] == 0.50){
+            if(iagoEarlySkipIntegral[0] == 0.05){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_5_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_5_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_5_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_5_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_10_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_10_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_10_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_10_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_15_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_15_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_15_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_15_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_20_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_20_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_20_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_20_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_25_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_25_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_25_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_25_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_30_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_30_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_30_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_30_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_35_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_35_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_35_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_35_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_40_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_40_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_40_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_40_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+            // Selects appropriate cutoff variance
+                switch(currDepth){
+                    case 0:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_45_VAR_64;
+                        break;
+                    case 1:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_45_VAR_32;
+                        break;
+                    case 2:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_45_VAR_16;
+                        break;
+                    case 3:
+                        currCutoff = _3B_QP37_POLAR_CUTOFF_45_VAR_8;
+                        break;
+                    default:
+                        currCutoff = currCutoff;
+                        break;
+                }
+            }            
+            else if(iagoEarlySkipIntegral[0] == 0.50){
                 // Selects appropriate cutoff variance
                 switch(currDepth){
                     case 0:
@@ -2892,7 +3612,187 @@ float getCurrentCutoffVariance_3BandsPolar(int currDepth){
         }
     }
     else{ // It is not AdaptiveQP
-        if(iagoEarlySkipIntegral[0] == 0.50){
+        if(iagoEarlySkipIntegral[0] == 0.05){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_5_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_5_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_5_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_5_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }            
+        else if(iagoEarlySkipIntegral[0] == 0.10){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_10_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_10_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_10_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_10_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }            
+        else if(iagoEarlySkipIntegral[0] == 0.15){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_15_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_15_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_15_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_15_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }            
+        else if(iagoEarlySkipIntegral[0] == 0.20){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_20_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_20_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_20_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_20_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }
+        else if(iagoEarlySkipIntegral[0] == 0.25){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_25_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_25_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_25_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_25_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }
+        else if(iagoEarlySkipIntegral[0] == 0.30){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_30_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_30_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_30_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_30_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }
+        else if(iagoEarlySkipIntegral[0] == 0.35){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_35_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_35_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_35_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_35_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }            
+        else if(iagoEarlySkipIntegral[0] == 0.40){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_40_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_40_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_40_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_40_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }            
+        else if(iagoEarlySkipIntegral[0] == 0.45){
+        // Selects appropriate cutoff variance
+            switch(currDepth){
+                case 0:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_45_VAR_64;
+                    break;
+                case 1:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_45_VAR_32;
+                    break;
+                case 2:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_45_VAR_16;
+                    break;
+                case 3:
+                    currCutoff = _3B_QPany_POLAR_CUTOFF_45_VAR_8;
+                    break;
+                default:
+                    currCutoff = currCutoff;
+                    break;
+            }
+        }        
+        else if(iagoEarlySkipIntegral[0] == 0.50){
         // Selects appropriate cutoff variance
             switch(currDepth){
                 case 0:
