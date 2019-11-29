@@ -72,6 +72,14 @@ extern int iagoReducedSRNdivisions;
 extern double *iagoReducedSRBandsDistribution;
 extern double *iagoReducedSRBandsScaleVerticalSR;
 extern double *iagoReducedSRBandsScaleHorizontalSR;
+
+// Encoding parameters to control the Early Termination of Intra PU sizes evaluation
+extern int rdPUSizeReduction;
+extern double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
+extern int refreshRate; // Frequency in which a frame is encoded without interference
+extern double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
+
+extern int statisticalPUSizeReduction;  // Enable the reduction of PU size based on PU size distribution statistics
 // iagostorch end
 
 using namespace std;
@@ -526,6 +534,7 @@ Void TAppEncTop::encode()
   printChromaFormat();
 
   // iagostorch begin
+      
   // Summary of custom encoding parameters
   printf("\n###############################################\n");
   printf("Iago Storch custom encoding parameters:\n");
@@ -557,6 +566,12 @@ Void TAppEncTop::encode()
   cout << endl;
   cout<<("\t\tBands Vert Scale:     "); for(int el=0;el<iagoReducedSRNdivisions/2;el++) cout << iagoReducedSRBandsScaleVerticalSR[el] << ", ";
   cout << endl;  
+  }
+  printf("\tIntra Early Termination:  %d\n", rdPUSizeReduction);
+  if(rdPUSizeReduction){
+  printf("\t\tRefresh rate:             %d\n", refreshRate);
+  printf("\t\tThreshold for RD:         %.2f\n", thresholdRD);
+  printf("\t\tMinimum contrib of CU     %.2f\n", minContribution);
   }
   printf("###############################################\n\n\n");
   // iagostorch end

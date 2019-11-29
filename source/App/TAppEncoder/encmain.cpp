@@ -42,6 +42,23 @@
 #include "TAppCommon/program_options_lite.h"
 
 // iagostorch begin
+
+// Variables to control the PU size reduction in intra prediction
+float hitRate = 1.00;   // Control the precision of the PU size skip technique
+int statisticalPUSizeReduction = 0; // Enable the reduction of PU size based on PU size distribution statistics
+int extractRDInfo = 1;
+ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
+
+// Variables to control the Early Termination of Intra PU sizes technique
+double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
+int rdPUSizeReduction; // Enable teh early termination of CU tree based on current RD_Cost
+int maxCtuDepthMatrixPrevFrame[ctuDepthMatrixHeight][ctuDepthMatrixWidth]; // Maximum depth achieved in each CTU. Indexed CTU-wise
+int **cuDepthMatrixPrevFrame; // Depth achieved in each CU of previous frame. Indexed SAMPLE-wise. Same depth is replicated for samples of the same CU
+double **rdcDenseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Same RD-Cost is replicated for samples of the same CU
+double **rdcSparseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Only the UPPER-LEFT corner of each CU contains the RD-Cost, the other samples are empty
+int refreshRate; // Frequency in which a frame is encoded without interference
+double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
+
 // Variables to control the Early Skip technique
 int iagoEarlySkip; // Custom encoding parameter. Controls early skip based on block variance
 int iagoEarlySkipAdaptiveQP; // Custom encodin parameter. When enabled, variance cutoff for early skip varies according to QP
@@ -122,6 +139,35 @@ int main(int argc, char* argv[]) {
         intermediateCuInfo.open("intermediatePU.csv");
         intermediateCuInfo << "Frame,CTU#,Pos,Depth,Type,Idx,Merge,Skip,Ref0,MV0,Ref1,MV1" << endl;
     }
+    
+    if (extractRDInfo){
+        RDs_64x64.open("RD64.csv");
+        RDs_64x64 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_32x32.open("RD32.csv");
+        RDs_32x32 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_16x16.open("RD16.csv");
+        RDs_16x16 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_8x8.open("RD8.csv");
+        RDs_8x8 << "Frame,CTU#,PosY,PosX,RD" << endl;
+        RDs_4x4.open("RD4.csv");
+        RDs_4x4 << "Frame,CTU#,PosY,PosX,RD" << endl;
+    }
+    
+    // Initialize max depth of CTUs with depth 0 (64x64)
+    for (int i=0; i<ctuDepthMatrixHeight; i++)
+        for(int j=0; j<ctuDepthMatrixWidth; j++)
+            maxCtuDepthMatrixPrevFrame[i][j] = 0;
+    
+    // Allocation for RD-Cost and depth matrix of previous frame
+    cuDepthMatrixPrevFrame = (int**) malloc(cuDepthMatrixHeight * sizeof(int*));
+    rdcDenseMatrixPrevFrame = (double**) malloc(cuDepthMatrixHeight * sizeof(double*));
+    rdcSparseMatrixPrevFrame = (double**) malloc(cuDepthMatrixHeight * sizeof(double*));
+    for(int k=0; k<cuDepthMatrixHeight; k++){
+        cuDepthMatrixPrevFrame[k] = (int*) malloc(cuDepthMatrixWidth * sizeof(int));
+        rdcDenseMatrixPrevFrame[k] = (double*) malloc(cuDepthMatrixWidth * sizeof(double));
+        rdcSparseMatrixPrevFrame[k] = (double*) malloc(cuDepthMatrixWidth * sizeof(double));
+    }
+    
     // iagostorch end
     TAppEncTop cTAppEncTop;
 
@@ -149,7 +195,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error parsing option \"" << e.arg << "\" with argument \"" << e.val << "\"." << std::endl;
         return 1;
     }
-
+    
 #if PRINT_MACRO_VALUES
     printMacroSettings();
 #endif
@@ -207,7 +253,14 @@ int main(int argc, char* argv[]) {
     if (extractIntermediateCuInfo) {
         intermediateCuInfo.close();
     }
-
+    if (extractRDInfo){
+        RDs_64x64.close();
+        RDs_32x32.close();
+        RDs_16x16.close();
+        RDs_8x8.close();
+        RDs_4x4.close();
+    }
+    
     // iagostorch end
 
     return 0;
