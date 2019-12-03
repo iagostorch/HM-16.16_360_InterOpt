@@ -112,6 +112,10 @@ inline Int64 abs (Int64 x) { return _abs64(x); };
 // iagostorch constants
 // ====================================================================================================================
 
+static const int    POLAR =                                      0;     // index to reference the frame regions depending on the position
+static const int    MID_POLAR =                                  1;
+static const int    CENTRAL =                                    2;
+
 // FME reduction constants
 static const Int VERTICAL_FME =     0;
 static const Int HORIZONTAL_FME =   1;

@@ -49,6 +49,11 @@ int statisticalPUSizeReduction = 0; // Enable the reduction of PU size based on 
 int extractRDInfo = 1;
 ofstream RDs_64x64, RDs_32x32, RDs_16x16, RDs_8x8, RDs_4x4;
 
+//Variables to control the reduction of intra prediciton modes in Intra Prediction
+int iagoReducedIntraModes;  // Custom encoding parameter. Enable reduction of intra modes evaluated based on statistical distribution
+double *iagoReducedIntraModesBandsDistribution; // Custom encoding parameter. Controle the size of each band
+int iagoReducedIntraModesNdivisions;
+
 // Variables to control the Early Termination of Intra PU sizes technique
 double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
 int rdPUSizeReduction; // Enable teh early termination of CU tree based on current RD_Cost

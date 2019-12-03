@@ -80,6 +80,11 @@ extern int rdPUSizeReduction;
 extern double thresholdRD; // Threshold admitted when comparing current RD-Cost to RD-Cost of previous frame
 extern int refreshRate; // Frequency in which a frame is encoded without interference
 extern double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
+
+// Variables to control the technique to reduce number of intra prediciotn modes evaluated
+extern int iagoReducedIntraModes;   
+extern double *iagoReducedIntraModesBandsDistribution;
+extern int iagoReducedIntraModesNdivisions;
 // iagostorch end
 
 using namespace std;
@@ -723,6 +728,7 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   SMultiValueInput<Double> iagoReducedSRBandsDistribution_cfg         (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
   SMultiValueInput<Double> iagoReducedSRBandsScaleVerticalSR_cfg         (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
   SMultiValueInput<Double> iagoReducedSRBandsScaleHorizontalSR_cfg       (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
+  SMultiValueInput<Double> iagoReducedIntraModesBandsDistribution_cfg         (0, std::numeric_limits<UInt>::max(), 0, std::numeric_limits<UInt>::max());
   // iagostorch end
     po::Options opts;
   opts.addOptions()
@@ -752,6 +758,9 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
   ("IagoRdPUSizeReductionRefreshRate",                refreshRate,                                              4, "Frequency in which a frame will be encoded without interference")
   ("IagoRdPUSizeReductionThreshold",                  thresholdRD,                                            1.0, "Threshold to admit when comparing RD-Cost of current CU with co-located CU in reference frame to perform Early Termination. Greater values are more aggressive")
   ("IagoRdPUSizeReductionMinContribution",            minContribution,                                       0.30, "Defines the minimum contribution a PU size must have in a CTU row to be eligible to Early Termination. Smaller values are more aggressive") 
+  // Encoding parameters to reduce number of intra prediction modes evaluated
+  ("IagoReducedIntraModes",                           iagoReducedIntraModes,                                      0, "Enable technique to reduce number of intra modes evaluated")
+  ("IagoReducedIntraModesBandsDistribution",          iagoReducedIntraModesBandsDistribution_cfg,    iagoReducedIntraModesBandsDistribution_cfg, "Array containing proportion of each band, in a top-bottom order") 
   // iagostorch end
   ("InputFile,i",                                     m_inputFileName,                             string(""), "Original YUV input file name")
   ("BitstreamFile,b",                                 m_bitstreamFileName,                         string(""), "Bitstream output file name")
@@ -1279,6 +1288,20 @@ Bool TAppEncCfg::parseCfg( Int argc, TChar* argv[] )
           iagoReducedSRBandsScaleHorizontalSR[el] = iagoReducedSRBandsScaleHorizontalSR_cfg.values[el];
       }   
   }
+  // Parse encoding parameters and fill array for bands distribution in reduced intra modes technique
+  if(iagoReducedIntraModesBandsDistribution_cfg.values.size() > 0){
+      int nElements = iagoReducedIntraModesBandsDistribution_cfg.values.size();
+      assert((nElements == 2) or (nElements == 4));
+      
+      iagoReducedIntraModesNdivisions = nElements;
+      
+      iagoReducedIntraModesBandsDistribution = (double *) malloc(nElements * sizeof(double));
+      
+      for(int el = 0; el < nElements; el++){
+          iagoReducedIntraModesBandsDistribution[el] = iagoReducedIntraModesBandsDistribution_cfg.values[el];
+      }
+  }
+   
   // iagostorch end
   if( !m_tileUniformSpacingFlag && m_numTileColumnsMinus1 > 0 )
   {
