@@ -79,6 +79,11 @@ extern double thresholdRD; // Threshold admitted when comparing current RD-Cost 
 extern int refreshRate; // Frequency in which a frame is encoded without interference
 extern double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
 
+// Encoding parameters to control the reduction of intra prediction modes evaluated
+extern int iagoReducedIntraModes;
+extern double *iagoReducedIntraModesBandsDistribution;
+extern int iagoReducedIntraModesNdivisions;
+
 extern int statisticalPUSizeReduction;  // Enable the reduction of PU size based on PU size distribution statistics
 // iagostorch end
 
@@ -573,6 +578,11 @@ Void TAppEncTop::encode()
   printf("\t\tThreshold for RD:         %.2f\n", thresholdRD);
   printf("\t\tMinimum contrib of CU     %.2f\n", minContribution);
   }
+  printf("\tReduced Intra Modes:  %d\n", iagoReducedIntraModes);
+  if(iagoReducedIntraModes){
+  cout<<("\t\tBands distribution:   "); for(int el=0;el<iagoReducedIntraModesNdivisions;el++) cout << iagoReducedIntraModesBandsDistribution[el] << ", ";
+  cout << endl;
+  }  
   printf("###############################################\n\n\n");
   // iagostorch end
   // main encoder loop

@@ -63,6 +63,15 @@ Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVe
 
 #include <sys/time.h>
 
+#include "INTRA_MODES_SCORE.h"
+extern int iagoReducedIntraModes;   // Custom encoding parameter. Enable reduction of intra modes evaluated based on statistical distribution
+extern double *iagoReducedIntraModesBandsDistribution;  // Custom encoding parameter. Controle the size of each band
+extern int iagoReducedIntraModesNdivisions;
+Float intraModesScore[35];  // The accumulated score of each intra prediction mode
+int mustGenerateIntraModesDistribution = 1; // This is used to load the fixed score for each mode/band only once
+Int getMaxScoreModeAndResetMax(Float *score, UInt *uiRdModeList, UInt numModesForFullRD); // Used to rank the prediction modes in descending score
+void generateIntraModesDistribution(); // Used to load the fixed score for each mode/band
+
 // Variables to track execution time of some encoding steps
 struct timeval  tv1, tv2; // raster
 struct timeval  tv7, tv8; // xMotionEstimation
@@ -2460,6 +2469,115 @@ TEncSearch::estIntraPredLumaQT(TComDataCU* pcCU,
     assert (tuRecurseWithPU.ProcessComponentSection(COMPONENT_Y));
     initIntraPatternChType( tuRecurseWithPU, COMPONENT_Y, true DEBUG_STRING_PASS_INTO(sTemp2) );
 
+    // iagostorch begin
+    
+    // On the first time the intra prediction is performed, the scores of each mode/size/band is loaded
+    if(mustGenerateIntraModesDistribution){
+      mustGenerateIntraModesDistribution = 0;
+      generateIntraModesDistribution();
+    } 
+    
+    Bool reducedIntraModesCondition = false; // This is turned True when encoding PUs in polar/mid-polar bands
+    Int frameArea = -1;
+    
+    if(iagoReducedIntraModes){
+    
+        int c;  //Used to copy the PU size-specific array into the score array
+        float intraVertPos;
+
+        if(uiWidthBit == 1) // CU 8x8 and PU 4x4
+            intraVertPos = (pcCU->getCUPelY() + (2 << (uiWidthBit + 1)) - 1.0)/(pcCU->getSlice()->getPic()->getFrameHeightInCtus()*64); //Decimal number representing the vertical position of the CTU within the frame. 0.5 -> CTU top is at the middle of the frame
+        else    // CU and PU 2N x 2N. CU size = 2 << uiWidthBit
+            intraVertPos = (pcCU->getCUPelY() + (2 << uiWidthBit) - 1.0)/(pcCU->getSlice()->getPic()->getFrameHeightInCtus()*64); //Decimal number representing the vertical position of the CTU within the frame. 0.5 -> CTU top is at the middle of the frame
+
+        
+        int nBands = iagoReducedIntraModesNdivisions+1;
+        if(nBands == 3){
+            if (intraVertPos <= iagoReducedIntraModesBandsDistribution[0] or intraVertPos >= iagoReducedIntraModesBandsDistribution[1]){
+                frameArea = POLAR;
+            }
+            else{
+                frameArea = CENTRAL;   
+            }
+        }
+        else if(nBands == 5){
+            if (intraVertPos <= iagoReducedIntraModesBandsDistribution[0] or intraVertPos >= iagoReducedIntraModesBandsDistribution[3])
+                frameArea = POLAR;
+            else if (intraVertPos <= iagoReducedIntraModesBandsDistribution[1] or intraVertPos >= iagoReducedIntraModesBandsDistribution[2])
+                frameArea = MID_POLAR;
+            else
+                frameArea = CENTRAL;
+        }
+        else{
+            cout << "ERROR - Incorrect number of bands for Reduced Intra Modes technique" << endl;
+        }
+
+        assert(frameArea != -1);
+
+        // Condition which triggers the algorithm. i.e. the CTU is not in the central area
+        reducedIntraModesCondition = frameArea != CENTRAL;
+
+        if(reducedIntraModesCondition){    // Copy the scores from adequate array into score
+            if(frameArea == POLAR){
+                switch(uiWidthBit){
+                    case 5: //PU 64x64
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_polar_64[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO64[c];
+                        break;
+                    case 4: //PU 32x32
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_polar_32[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO32[c];
+                        break;
+                    case 3: //PU 16x16
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_polar_16[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO16[c];
+                        break;
+                    case 2: //PU 8x8
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_polar_8[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO8[c];
+                        break;
+                    case 1: //PU 4x4
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_polar_4[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO4[c];
+                        break;       
+                    default:
+                        printf("Default\n");
+                        assert((uiWidthBit >= 1) && (uiWidthBit <= 5));
+                        break;
+                }
+            }
+            else if(frameArea == MID_POLAR){
+                switch(uiWidthBit){
+                    case 5: //PU 64x64
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_mid_polar_64[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO64[c];
+                        break;
+                    case 4: //PU 32x32
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_mid_polar_32[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO32[c];
+                        break;
+                    case 3: //PU 16x16
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_mid_polar_16[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO16[c];
+                        break;
+                    case 2: //PU 8x8
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_mid_polar_8[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO8[c];
+                        break;
+                    case 1: //PU 4x4
+                        for(c=0; c<35; c++) intraModesScore[c] = fixed_rates_mid_polar_4[c];
+                        for(c=0; c<8; c++)  corrRMD_RDO[c] = corrRMD_RDO4[c];
+                        break;       
+                    default:
+                        printf("Default\n");
+                        assert((uiWidthBit >= 1) && (uiWidthBit <= 5));
+                        break;
+                }
+            }          
+        }
+    }
+    // iagostorch end
+    
     Bool doFastSearch = (numModesForFullRD != numModesAvailable);
     if (doFastSearch)
     {
@@ -2514,6 +2632,21 @@ TEncSearch::estIntraPredLumaQT(TComDataCU* pcCU,
         Int iMode = -1;
         pcCU->getIntraDirPredictor( uiPartOffset, uiPreds, COMPONENT_Y, &iMode );
 
+        // iagostorch begin
+        if(reducedIntraModesCondition){
+            //  Adds 0.30 score to the MPMs
+            intraModesScore[uiPreds[0]] += MPM_SCORE;
+            intraModesScore[uiPreds[1]] += MPM_SCORE;
+            intraModesScore[uiPreds[2]] += MPM_SCORE;
+           
+            //  Adds specific scores to modes selected by RMD
+            for(Int i=0; i<numModesForFullRD; i++){
+                int mode = uiRdModeList[i];
+                intraModesScore[mode] += corrRMD_RDO[i];
+            }  
+        }
+        // iagostorch end
+        
         const Int numCand = ( iMode >= 0 ) ? iMode : Int(NUM_MOST_PROBABLE_MODES);
 
         for( Int j=0; j < numCand; j++)
@@ -2541,6 +2674,45 @@ TEncSearch::estIntraPredLumaQT(TComDataCU* pcCU,
     }
 
     //===== check modes (using r-d costs) =====
+// iagostorch begin
+    if(reducedIntraModesCondition){
+        // Print the score for each mode
+//        cout << "Modo -> score\n";
+//        for(Int i=0; i<numModesForFullRD; i++){
+//            printf("%d->%f, ", uiRdModeList[i], intraModesScore[uiRdModeList[i]]);        
+//        }
+//        printf("\n");
+        
+        // Load the number of modes to be evaluated in RDO according to band and PU size
+        int modesToEvaluate = -1;
+        if(iagoReducedIntraModesNdivisions == 2){ // 3 bands
+            modesToEvaluate = topScore_3B[uiWidthBit];
+        }
+        else if(iagoReducedIntraModesNdivisions == 4){ // 5 bands
+            modesToEvaluate = topScore_5B[frameArea][uiWidthBit];
+        }
+                
+        assert(modesToEvaluate != -1);
+        
+        // Modes to be evaluated during RDO
+        Int RDO_modes[modesToEvaluate] = {-1, };
+        
+        // Find the modes with greater scores
+        Int maxScoreMode = -1;
+        for(Int i=0; i<modesToEvaluate; i++){
+            maxScoreMode = getMaxScoreModeAndResetMax(intraModesScore, uiRdModeList, numModesForFullRD);
+            RDO_modes[i] = maxScoreMode;
+//            printf("%d, ",maxScoreMode);
+        }
+        
+//        printf("\n");
+        for(Int i=0; i<modesToEvaluate; i++){   // Puts the modes with maximum score in the first positions of uiRdModeList
+            uiRdModeList[i] = RDO_modes[i];
+        }
+        numModesForFullRD = modesToEvaluate;   
+    }   
+// iagostorch end     
+    
 #if HHI_RQT_INTRA_SPEEDUP_MOD
     UInt   uiSecondBestMode  = MAX_UINT;
     Double dSecondBestPUCost = MAX_DOUBLE;
@@ -6406,6 +6578,54 @@ Void calculateSearchRangeScale ( const TComDataCU* const currCU, Int &iSrchRngVe
         cout << "Error - Invalid number of bands in reduced search range technique" << endl;
     }
 }     
+
+//  Function to return the mode with the highest score. Sets the maximum score to -2 to avoid getting duplicate modes in multiple calls
+Int getMaxScoreModeAndResetMax(Float *score, UInt *uiRdModeList, UInt numModesForFullRD){
+    float maxScore = -1.0;
+    int maxScoreMode=-1, mode;
+    for(Int i=0; i<numModesForFullRD; i++){
+        mode = uiRdModeList[i];
+        if(score[mode] > maxScore){
+            maxScore = score[mode];
+            maxScoreMode = mode;
+        }
+    }
+    score[maxScoreMode] = -2.0;
+    return maxScoreMode;
+}
+
+//  Function to load the scores due to occurrence rate distribution according to number of bands
+void generateIntraModesDistribution(){
+    int nBands = iagoReducedIntraModesNdivisions + 1;
+    if(nBands == 3){
+        cout << "Fez distribuição 3 BANDAS" << endl;
+        for(int i=0; i<35; i++){
+            fixed_rates_polar_64[i] = fixed_rates_3B_64[i];
+            fixed_rates_polar_32[i] = fixed_rates_3B_32[i];
+            fixed_rates_polar_16[i] = fixed_rates_3B_16[i];
+            fixed_rates_polar_8[i] = fixed_rates_3B_8[i];
+            fixed_rates_polar_4[i] = fixed_rates_3B_4[i];
+        }
+    }
+    else if(nBands == 5){
+        for(int i=0; i<35; i++){
+            fixed_rates_polar_64[i] = fixed_rates_5B_64[POLAR][i];
+            fixed_rates_polar_32[i] = fixed_rates_5B_32[POLAR][i];
+            fixed_rates_polar_16[i] = fixed_rates_5B_16[POLAR][i];
+            fixed_rates_polar_8[i] = fixed_rates_5B_8[POLAR][i];
+            fixed_rates_polar_4[i] = fixed_rates_5B_4[POLAR][i];
+            
+            fixed_rates_mid_polar_64[i] = fixed_rates_5B_64[MID_POLAR][i];
+            fixed_rates_mid_polar_32[i] = fixed_rates_5B_32[MID_POLAR][i];
+            fixed_rates_mid_polar_16[i] = fixed_rates_5B_16[MID_POLAR][i];
+            fixed_rates_mid_polar_8[i] = fixed_rates_5B_8[MID_POLAR][i];
+            fixed_rates_mid_polar_4[i] = fixed_rates_5B_4[MID_POLAR][i];            
+        }
+    }
+    else{
+        cout << "ERROR - Incorect number of bands for Reduced Intra Modes technique" << endl;
+    }
+}
 
 // iagostorch end
 
