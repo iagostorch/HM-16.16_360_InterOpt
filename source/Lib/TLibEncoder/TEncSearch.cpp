@@ -2472,7 +2472,7 @@ TEncSearch::estIntraPredLumaQT(TComDataCU* pcCU,
     // iagostorch begin
     
     // On the first time the intra prediction is performed, the scores of each mode/size/band is loaded
-    if(mustGenerateIntraModesDistribution){
+    if(mustGenerateIntraModesDistribution and iagoReducedIntraModes){
       mustGenerateIntraModesDistribution = 0;
       generateIntraModesDistribution();
     } 
