@@ -91,9 +91,9 @@ float MIDPOL_CUTOFF_VAR_8 = -1;
 float calculateVar(TComDataCU* currCU); // Used to calculate variance of current CU
 void writeIntermediateCU(TComDataCU *CU);
 int   shouldForceSkip     (TComDataCU* currCU); // This function defines if currentCU should be forced to skip. Remaining encoding modes are ignored
-void loadCutoffVariances_3B();          // These functions load the proper cutoff variance into POLAR_CUTOFF_VAR_64 and similars
-void loadCutoffVariances_5B_Polar();    // Depending on integral value, number of bands and QP
-void loadCutoffVariances_5B_MidPolar();
+void loadCutoffVariances_3B(int frameHeight);          // These functions load the proper cutoff variance into POLAR_CUTOFF_VAR_64 and similars
+void loadCutoffVariances_5B_Polar(int frameHeight);    // Depending on integral value, number of bands and QP
+void loadCutoffVariances_5B_MidPolar(int frameHeight);
 void getRDCostPerDepth(TComDataCU* pCtu); // Extract the RD-Cost of each CU inside the current CTU
 void fillMatrixInt(int** matrix, int val, int firstX, int lastX, int firstY, int lastY); // Fill a region of the matrix with a given value
 void fillMatrixDouble(double** matrix, double val, int firstX, int lastX, int firstY, int lastY); // Fill a region of the matrix with a given value
@@ -342,15 +342,17 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
   // It is only run once
   if(mustLoadCutoffVariances){
     mustLoadCutoffVariances = 0;
+    int height = pCtu->getPic()->getFrameHeightInCtus()*64;
+
     if(iagoEarlySkipNdivisions == 2){   // 3 bands
-        loadCutoffVariances_3B();
+        loadCutoffVariances_3B(height);
     }
     else if(iagoEarlySkipNdivisions == 4){  // 5 bands
-        loadCutoffVariances_5B_Polar();
-        loadCutoffVariances_5B_MidPolar();
+        loadCutoffVariances_5B_Polar(height);
+        loadCutoffVariances_5B_MidPolar(height);
     }
     else{
-        cout << "Error - Incorrect numbre of bands" << endl;
+        cout << "Error - Incorrect numbre of bands when loading cutoff variance" << endl;
     }
   }
 // iagostorch end  
@@ -2542,1741 +2544,3487 @@ float calculateVar(TComDataCU* currCU){
 
 // This function evaluates the QP and integral value to store the proper
 // Cutoff variances into POLAR_CUTOFF_VAR_64 and similar variables
-void loadCutoffVariances_3B(){
-    if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
-        if(keyQP == 22){
+void loadCutoffVariances_3B(int frameHeight){
+    if(frameHeight == 1664){
+        if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
+            if(keyQP == 22){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP22_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP22_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP22_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP22_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 27){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP27_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP27_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP27_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP27_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 32){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP32_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP32_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP32_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP32_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 37){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_3B_QP37_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_3B_QP37_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_3B_QP37_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_3B_QP37_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else{
+                cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            }
+        }
+        else{   // não adaptativo ao QP
             if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_5_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_5_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_5_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_5_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_5_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_10_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_10_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_10_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_10_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_10_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_15_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_15_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_15_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_15_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_15_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_20_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_20_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_20_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_20_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_20_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_25_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_25_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_25_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_25_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_25_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_30_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_30_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_30_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_30_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_30_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_35_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_35_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_35_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_35_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_35_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_40_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_40_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_40_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_40_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_40_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_45_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_45_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_45_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_45_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_45_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_50_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_50_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_50_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_50_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_50_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_55_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_55_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_55_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_55_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_55_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_60_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_60_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_60_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_60_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_60_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_65_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_65_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_65_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_65_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_65_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_70_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_70_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_70_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_70_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_70_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_75_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_75_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_75_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_75_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_75_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_80_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_80_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_80_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_80_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_80_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_85_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_85_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_85_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_85_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_85_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _3B_QP22_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP22_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP22_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP22_POLAR_CUTOFF_90_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_3B_QPany_POLAR_CUTOFF_90_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_3B_QPany_POLAR_CUTOFF_90_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_3B_QPany_POLAR_CUTOFF_90_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_3B_QPany_POLAR_CUTOFF_90_VAR_8;
             }
             else{
                 cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
                 cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 27){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _3B_QP27_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP27_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP27_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP27_POLAR_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 32){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _3B_QP32_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP32_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP32_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP32_POLAR_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 37){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _3B_QP37_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _3B_QP37_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _3B_QP37_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _3B_QP37_POLAR_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else{
-            cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
-        }
+            } 
+        }        
     }
-    else{   // não adaptativo ao QP
-        if(iagoEarlySkipIntegral[0] == 0.05){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_5_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_5_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_5_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_5_VAR_8;
+    else if(frameHeight == 2048){
+        if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
+            if(keyQP == 22){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP22_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP22_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP22_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP22_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 27){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP27_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP27_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP27_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP27_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 32){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP32_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP32_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP32_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP32_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 37){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_3B_QP37_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_3B_QP37_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_3B_QP37_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_3B_QP37_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else{
+                cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            }
         }
-        else if(iagoEarlySkipIntegral[0] == 0.10){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_10_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_10_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_10_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_10_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.15){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_15_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_15_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_15_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_15_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.20){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_20_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_20_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_20_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_20_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.25){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_25_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_25_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_25_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_25_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.30){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_30_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_30_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_30_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_30_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.35){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_35_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_35_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_35_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_35_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.40){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_40_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_40_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_40_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_40_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.45){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_45_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_45_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_45_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_45_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.50){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_50_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_50_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_50_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_50_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.55){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_55_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_55_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_55_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_55_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.60){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_60_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_60_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_60_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_60_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.65){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_65_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_65_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_65_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_65_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.70){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_70_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_70_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_70_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_70_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.75){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_75_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_75_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_75_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_75_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.80){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_80_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_80_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_80_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_80_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.85){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_85_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_85_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_85_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_85_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.90){
-            POLAR_CUTOFF_VAR_64 = _3B_QPany_POLAR_CUTOFF_90_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _3B_QPany_POLAR_CUTOFF_90_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _3B_QPany_POLAR_CUTOFF_90_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _3B_QPany_POLAR_CUTOFF_90_VAR_8;
-        }
-        else{
-            cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-            cout << typeid(iagoEarlySkipIntegral).name() << endl;
-        } 
+        else{   // não adaptativo ao QP
+            if(iagoEarlySkipIntegral[0] == 0.05){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_5_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_5_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_5_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_5_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_10_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_10_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_10_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_10_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_15_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_15_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_15_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_15_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_20_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_20_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_20_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_20_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_25_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_25_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_25_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_25_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_30_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_30_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_30_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_30_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_35_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_35_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_35_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_35_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_40_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_40_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_40_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_40_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_45_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_45_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_45_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_45_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.50){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_50_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_50_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_50_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_50_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.55){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_55_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_55_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_55_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_55_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.60){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_60_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_60_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_60_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_60_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.65){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_65_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_65_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_65_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_65_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.70){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_70_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_70_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_70_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_70_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.75){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_75_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_75_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_75_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_75_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.80){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_80_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_80_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_80_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_80_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.85){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_85_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_85_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_85_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_85_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.90){
+                POLAR_CUTOFF_VAR_64 = _2048p_3B_QPany_POLAR_CUTOFF_90_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_3B_QPany_POLAR_CUTOFF_90_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_3B_QPany_POLAR_CUTOFF_90_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_3B_QPany_POLAR_CUTOFF_90_VAR_8;
+            }
+            else{
+                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                cout << typeid(iagoEarlySkipIntegral).name() << endl;
+            } 
+        }                
+    }
+    else{
+        cout << "ERROR - Incorrect frame resolution when loading cutoff variances" << endl;
     }
 }
 
 // This function evaluates the QP and integral value to store the proper
 // Cutoff variances into POLAR_CUTOFF_VAR_64 and similar variables
-void loadCutoffVariances_5B_Polar(){
-    if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
-        if(keyQP == 22){
+void loadCutoffVariances_5B_Polar(int frameHeight){
+    if(frameHeight == 1664){
+        if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
+            if(keyQP == 22){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP22_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP22_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP22_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP22_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 27){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP27_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP27_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP27_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP27_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 32){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP32_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP32_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP32_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP32_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 37){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _1664p_5B_QP37_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _1664p_5B_QP37_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _1664p_5B_QP37_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _1664p_5B_QP37_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else{
+                cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            }
+        }
+        else{   // não adaptativo ao QP
             if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_5_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_5_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_5_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_5_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_5_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_10_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_10_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_10_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_10_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_10_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_15_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_15_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_15_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_15_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_15_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_20_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_20_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_20_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_20_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_20_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_25_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_25_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_25_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_25_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_25_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_30_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_30_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_30_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_30_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_30_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_35_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_35_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_35_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_35_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_35_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_40_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_40_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_40_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_40_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_40_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_45_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_45_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_45_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_45_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_45_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_50_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_50_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_50_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_50_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_50_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_55_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_55_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_55_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_55_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_55_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_60_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_60_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_60_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_60_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_60_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_65_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_65_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_65_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_65_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_65_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_70_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_70_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_70_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_70_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_70_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_75_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_75_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_75_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_75_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_75_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_80_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_80_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_80_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_80_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_80_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_85_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_85_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_85_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_85_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_85_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _5B_QP22_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP22_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP22_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP22_POLAR_CUTOFF_90_VAR_8;
+                POLAR_CUTOFF_VAR_64 = _1664p_5B_QPany_POLAR_CUTOFF_90_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _1664p_5B_QPany_POLAR_CUTOFF_90_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _1664p_5B_QPany_POLAR_CUTOFF_90_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _1664p_5B_QPany_POLAR_CUTOFF_90_VAR_8;
             }
             else{
                 cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
                 cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 27){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _5B_QP27_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP27_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP27_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP27_POLAR_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 32){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _5B_QP32_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP32_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP32_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP32_POLAR_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 37){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_5_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_5_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_5_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_10_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_10_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_10_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_15_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_15_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_15_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_20_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_20_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_20_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_25_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_25_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_25_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_30_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_30_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_30_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_35_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_35_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_35_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_40_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_40_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_40_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_45_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_45_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_45_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_50_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_50_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_50_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_55_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_55_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_55_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_60_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_60_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_60_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_65_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_65_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_65_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_70_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_70_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_70_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_75_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_75_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_75_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_80_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_80_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_80_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_85_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_85_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_85_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                POLAR_CUTOFF_VAR_64 = _5B_QP37_POLAR_CUTOFF_90_VAR_64;
-                POLAR_CUTOFF_VAR_32 = _5B_QP37_POLAR_CUTOFF_90_VAR_32;
-                POLAR_CUTOFF_VAR_16 = _5B_QP37_POLAR_CUTOFF_90_VAR_16;
-                POLAR_CUTOFF_VAR_8 = _5B_QP37_POLAR_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else{
-            cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            } 
         }
     }
-    else{   // não adaptativo ao QP
-        if(iagoEarlySkipIntegral[0] == 0.05){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_5_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_5_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_5_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_5_VAR_8;
+    else if(frameHeight == 2048){
+        if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
+            if(keyQP == 22){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP22_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP22_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP22_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP22_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 27){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP27_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP27_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP27_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP27_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 32){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP32_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP32_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP32_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP32_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 37){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_5_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_5_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_5_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_10_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_10_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_10_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_15_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_15_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_15_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_20_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_20_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_20_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_25_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_25_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_25_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_30_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_30_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_30_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_35_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_35_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_35_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_40_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_40_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_40_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_45_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_45_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_45_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_50_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_50_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_50_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_55_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_55_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_55_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_60_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_60_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_60_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_65_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_65_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_65_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_70_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_70_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_70_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_75_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_75_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_75_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_80_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_80_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_80_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_85_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_85_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_85_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    POLAR_CUTOFF_VAR_64 = _2048p_5B_QP37_POLAR_CUTOFF_90_VAR_64;
+                    POLAR_CUTOFF_VAR_32 = _2048p_5B_QP37_POLAR_CUTOFF_90_VAR_32;
+                    POLAR_CUTOFF_VAR_16 = _2048p_5B_QP37_POLAR_CUTOFF_90_VAR_16;
+                    POLAR_CUTOFF_VAR_8 = _2048p_5B_QP37_POLAR_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else{
+                cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            }
         }
-        else if(iagoEarlySkipIntegral[0] == 0.10){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_10_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_10_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_10_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_10_VAR_8;
+        else{   // não adaptativo ao QP
+            if(iagoEarlySkipIntegral[0] == 0.05){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_5_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_5_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_5_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_5_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_10_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_10_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_10_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_10_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_15_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_15_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_15_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_15_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_20_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_20_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_20_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_20_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_25_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_25_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_25_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_25_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_30_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_30_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_30_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_30_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_35_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_35_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_35_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_35_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_40_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_40_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_40_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_40_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_45_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_45_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_45_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_45_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.50){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_50_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_50_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_50_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_50_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.55){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_55_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_55_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_55_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_55_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.60){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_60_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_60_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_60_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_60_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.65){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_65_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_65_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_65_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_65_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.70){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_70_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_70_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_70_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_70_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.75){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_75_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_75_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_75_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_75_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.80){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_80_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_80_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_80_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_80_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.85){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_85_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_85_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_85_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_85_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.90){
+                POLAR_CUTOFF_VAR_64 = _2048p_5B_QPany_POLAR_CUTOFF_90_VAR_64;
+                POLAR_CUTOFF_VAR_32 = _2048p_5B_QPany_POLAR_CUTOFF_90_VAR_32;
+                POLAR_CUTOFF_VAR_16 = _2048p_5B_QPany_POLAR_CUTOFF_90_VAR_16;
+                POLAR_CUTOFF_VAR_8 = _2048p_5B_QPany_POLAR_CUTOFF_90_VAR_8;
+            }
+            else{
+                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                cout << typeid(iagoEarlySkipIntegral).name() << endl;
+            } 
         }
-        else if(iagoEarlySkipIntegral[0] == 0.15){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_15_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_15_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_15_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_15_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.20){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_20_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_20_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_20_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_20_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.25){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_25_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_25_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_25_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_25_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.30){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_30_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_30_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_30_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_30_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.35){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_35_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_35_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_35_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_35_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.40){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_40_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_40_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_40_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_40_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.45){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_45_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_45_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_45_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_45_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.50){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_50_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_50_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_50_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_50_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.55){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_55_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_55_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_55_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_55_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.60){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_60_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_60_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_60_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_60_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.65){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_65_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_65_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_65_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_65_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.70){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_70_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_70_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_70_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_70_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.75){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_75_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_75_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_75_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_75_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.80){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_80_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_80_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_80_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_80_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.85){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_85_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_85_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_85_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_85_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.90){
-            POLAR_CUTOFF_VAR_64 = _5B_QPany_POLAR_CUTOFF_90_VAR_64;
-            POLAR_CUTOFF_VAR_32 = _5B_QPany_POLAR_CUTOFF_90_VAR_32;
-            POLAR_CUTOFF_VAR_16 = _5B_QPany_POLAR_CUTOFF_90_VAR_16;
-            POLAR_CUTOFF_VAR_8 = _5B_QPany_POLAR_CUTOFF_90_VAR_8;
-        }
-        else{
-            cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-            cout << typeid(iagoEarlySkipIntegral).name() << endl;
-        } 
+    }
+    else{
+        cout << "ERROR - Incorrect resolution when loading cutoff variances" << endl;
     }
 }
 
 // This function evaluates the QP and integral value to store the proper
 // Cutoff variances into MIDPOL_CUTOFF_VAR_64 and similar variables
-void loadCutoffVariances_5B_MidPolar(){
-    if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
-        if(keyQP == 22){
+void loadCutoffVariances_5B_MidPolar(int frameHeight){
+    if(frameHeight == 1664){
+        if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
+            if(keyQP == 22){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP22_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP22_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP22_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP22_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 27){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP27_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP27_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP27_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP27_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 32){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP32_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP32_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP32_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP32_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 37){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QP37_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QP37_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QP37_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QP37_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else{
+                cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            }
+        }
+        else{   // não adaptativo ao QP
             if(iagoEarlySkipIntegral[0] == 0.05){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_5_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_5_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_5_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_5_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_5_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_5_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_5_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_5_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.10){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_10_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_10_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_10_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_10_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_10_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_10_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_10_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_10_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.15){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_15_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_15_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_15_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_15_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_15_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_15_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_15_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_15_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.20){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_20_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_20_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_20_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_20_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_20_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_20_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_20_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_20_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.25){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_25_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_25_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_25_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_25_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_25_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_25_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_25_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_25_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.30){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_30_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_30_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_30_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_30_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_30_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_30_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_30_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_30_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.35){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_35_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_35_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_35_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_35_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_35_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_35_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_35_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_35_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.40){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_40_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_40_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_40_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_40_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_40_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_40_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_40_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_40_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.45){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_45_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_45_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_45_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_45_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_45_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_45_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_45_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_45_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.50){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_50_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_50_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_50_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_50_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_50_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_50_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_50_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_50_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.55){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_55_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_55_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_55_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_55_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_55_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_55_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_55_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_55_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.60){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_60_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_60_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_60_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_60_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_60_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_60_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_60_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_60_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.65){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_65_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_65_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_65_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_65_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_65_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_65_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_65_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_65_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.70){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_70_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_70_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_70_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_70_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_70_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_70_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_70_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_70_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.75){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_75_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_75_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_75_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_75_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_75_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_75_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_75_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_75_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.80){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_80_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_80_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_80_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_80_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_80_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_80_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_80_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_80_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.85){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_85_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_85_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_85_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_85_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_85_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_85_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_85_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_85_VAR_8;
             }
             else if(iagoEarlySkipIntegral[0] == 0.90){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP22_MIDPOL_CUTOFF_90_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP22_MIDPOL_CUTOFF_90_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP22_MIDPOL_CUTOFF_90_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP22_MIDPOL_CUTOFF_90_VAR_8;
+                MIDPOL_CUTOFF_VAR_64 = _1664p_5B_QPany_MIDPOL_CUTOFF_90_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _1664p_5B_QPany_MIDPOL_CUTOFF_90_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _1664p_5B_QPany_MIDPOL_CUTOFF_90_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _1664p_5B_QPany_MIDPOL_CUTOFF_90_VAR_8;
             }
             else{
                 cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
                 cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 27){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_5_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_5_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_5_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_10_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_10_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_10_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_15_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_15_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_15_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_20_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_20_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_20_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_25_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_25_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_25_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_30_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_30_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_30_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_35_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_35_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_35_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_40_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_40_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_40_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_45_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_45_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_45_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_50_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_50_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_50_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_55_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_55_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_55_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_60_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_60_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_60_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_65_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_65_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_65_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_70_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_70_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_70_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_75_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_75_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_75_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_80_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_80_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_80_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_85_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_85_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_85_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP27_MIDPOL_CUTOFF_90_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP27_MIDPOL_CUTOFF_90_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP27_MIDPOL_CUTOFF_90_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP27_MIDPOL_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 32){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_5_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_5_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_5_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_10_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_10_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_10_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_15_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_15_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_15_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_20_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_20_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_20_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_25_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_25_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_25_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_30_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_30_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_30_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_35_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_35_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_35_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_40_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_40_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_40_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_45_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_45_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_45_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_50_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_50_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_50_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_55_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_55_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_55_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_60_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_60_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_60_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_65_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_65_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_65_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_70_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_70_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_70_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_75_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_75_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_75_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_80_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_80_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_80_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_85_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_85_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_85_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP32_MIDPOL_CUTOFF_90_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP32_MIDPOL_CUTOFF_90_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP32_MIDPOL_CUTOFF_90_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP32_MIDPOL_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else if(keyQP == 37){
-            if(iagoEarlySkipIntegral[0] == 0.05){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_5_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_5_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_5_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_5_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.10){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_10_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_10_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_10_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_10_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.15){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_15_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_15_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_15_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_15_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.20){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_20_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_20_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_20_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_20_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.25){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_25_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_25_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_25_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_25_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.30){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_30_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_30_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_30_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_30_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.35){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_35_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_35_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_35_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_35_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.40){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_40_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_40_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_40_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_40_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.45){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_45_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_45_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_45_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_45_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.50){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_50_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_50_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_50_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_50_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.55){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_55_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_55_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_55_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_55_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.60){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_60_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_60_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_60_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_60_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.65){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_65_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_65_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_65_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_65_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.70){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_70_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_70_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_70_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_70_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.75){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_75_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_75_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_75_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_75_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.80){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_80_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_80_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_80_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_80_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.85){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_85_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_85_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_85_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_85_VAR_8;
-            }
-            else if(iagoEarlySkipIntegral[0] == 0.90){
-                MIDPOL_CUTOFF_VAR_64 = _5B_QP37_MIDPOL_CUTOFF_90_VAR_64;
-                MIDPOL_CUTOFF_VAR_32 = _5B_QP37_MIDPOL_CUTOFF_90_VAR_32;
-                MIDPOL_CUTOFF_VAR_16 = _5B_QP37_MIDPOL_CUTOFF_90_VAR_16;
-                MIDPOL_CUTOFF_VAR_8 = _5B_QP37_MIDPOL_CUTOFF_90_VAR_8;
-            }
-            else{
-                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-                cout << typeid(iagoEarlySkipIntegral).name() << endl;
-            }                
-        }
-        else{
-            cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            } 
         }
     }
-    else{   // não adaptativo ao QP
-        if(iagoEarlySkipIntegral[0] == 0.05){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_5_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_5_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_5_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_5_VAR_8;
+    else if(frameHeight == 2048){
+         if(iagoEarlySkipAdaptiveQP){    // adaptativo ao QP
+            if(keyQP == 22){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP22_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP22_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP22_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP22_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 27){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP27_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP27_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP27_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP27_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 32){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP32_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP32_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP32_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP32_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else if(keyQP == 37){
+                if(iagoEarlySkipIntegral[0] == 0.05){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_5_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_5_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_5_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_5_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.10){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_10_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_10_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_10_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_10_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.15){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_15_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_15_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_15_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_15_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.20){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_20_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_20_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_20_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_20_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.25){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_25_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_25_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_25_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_25_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.30){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_30_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_30_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_30_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_30_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.35){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_35_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_35_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_35_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_35_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.40){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_40_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_40_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_40_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_40_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.45){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_45_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_45_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_45_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_45_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.50){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_50_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_50_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_50_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_50_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.55){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_55_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_55_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_55_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_55_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.60){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_60_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_60_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_60_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_60_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.65){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_65_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_65_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_65_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_65_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.70){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_70_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_70_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_70_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_70_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.75){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_75_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_75_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_75_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_75_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.80){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_80_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_80_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_80_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_80_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.85){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_85_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_85_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_85_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_85_VAR_8;
+                }
+                else if(iagoEarlySkipIntegral[0] == 0.90){
+                    MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QP37_MIDPOL_CUTOFF_90_VAR_64;
+                    MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QP37_MIDPOL_CUTOFF_90_VAR_32;
+                    MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QP37_MIDPOL_CUTOFF_90_VAR_16;
+                    MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QP37_MIDPOL_CUTOFF_90_VAR_8;
+                }
+                else{
+                    cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                    cout << typeid(iagoEarlySkipIntegral).name() << endl;
+                }                
+            }
+            else{
+                cout << "\n\n\nERROR - INVALID QP IN AdaptiveQP OPERATING MODE\n\n\n" << endl;
+            }
         }
-        else if(iagoEarlySkipIntegral[0] == 0.10){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_10_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_10_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_10_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_10_VAR_8;
+        else{   // não adaptativo ao QP
+            if(iagoEarlySkipIntegral[0] == 0.05){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_5_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_5_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_5_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_5_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.10){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_10_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_10_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_10_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_10_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.15){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_15_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_15_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_15_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_15_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.20){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_20_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_20_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_20_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_20_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.25){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_25_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_25_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_25_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_25_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.30){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_30_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_30_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_30_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_30_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.35){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_35_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_35_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_35_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_35_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.40){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_40_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_40_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_40_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_40_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.45){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_45_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_45_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_45_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_45_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.50){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_50_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_50_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_50_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_50_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.55){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_55_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_55_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_55_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_55_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.60){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_60_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_60_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_60_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_60_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.65){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_65_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_65_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_65_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_65_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.70){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_70_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_70_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_70_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_70_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.75){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_75_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_75_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_75_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_75_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.80){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_80_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_80_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_80_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_80_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.85){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_85_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_85_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_85_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_85_VAR_8;
+            }
+            else if(iagoEarlySkipIntegral[0] == 0.90){
+                MIDPOL_CUTOFF_VAR_64 = _2048p_5B_QPany_MIDPOL_CUTOFF_90_VAR_64;
+                MIDPOL_CUTOFF_VAR_32 = _2048p_5B_QPany_MIDPOL_CUTOFF_90_VAR_32;
+                MIDPOL_CUTOFF_VAR_16 = _2048p_5B_QPany_MIDPOL_CUTOFF_90_VAR_16;
+                MIDPOL_CUTOFF_VAR_8 = _2048p_5B_QPany_MIDPOL_CUTOFF_90_VAR_8;
+            }
+            else{
+                cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
+                cout << typeid(iagoEarlySkipIntegral).name() << endl;
+            } 
         }
-        else if(iagoEarlySkipIntegral[0] == 0.15){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_15_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_15_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_15_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_15_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.20){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_20_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_20_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_20_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_20_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.25){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_25_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_25_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_25_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_25_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.30){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_30_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_30_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_30_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_30_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.35){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_35_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_35_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_35_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_35_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.40){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_40_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_40_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_40_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_40_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.45){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_45_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_45_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_45_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_45_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.50){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_50_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_50_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_50_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_50_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.55){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_55_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_55_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_55_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_55_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.60){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_60_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_60_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_60_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_60_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.65){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_65_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_65_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_65_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_65_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.70){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_70_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_70_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_70_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_70_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.75){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_75_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_75_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_75_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_75_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.80){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_80_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_80_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_80_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_80_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.85){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_85_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_85_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_85_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_85_VAR_8;
-        }
-        else if(iagoEarlySkipIntegral[0] == 0.90){
-            MIDPOL_CUTOFF_VAR_64 = _5B_QPany_MIDPOL_CUTOFF_90_VAR_64;
-            MIDPOL_CUTOFF_VAR_32 = _5B_QPany_MIDPOL_CUTOFF_90_VAR_32;
-            MIDPOL_CUTOFF_VAR_16 = _5B_QPany_MIDPOL_CUTOFF_90_VAR_16;
-            MIDPOL_CUTOFF_VAR_8 = _5B_QPany_MIDPOL_CUTOFF_90_VAR_8;
-        }
-        else{
-            cout << "\n\n\n ERROR - INVALID INTEGRAL VALUE FOR EARLY SKIP TECHNIQUE \n\n\n" << endl;
-            cout << typeid(iagoEarlySkipIntegral).name() << endl;
-        } 
+    }
+    else{
+        cout << "ERROR - Incorrect frame resolution when loading cutoff variances" << endl;
     }
 }
 
