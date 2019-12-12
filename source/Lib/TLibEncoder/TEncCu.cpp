@@ -340,7 +340,7 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
   // Load the proper cutoff variances into respective variables depending on
   // Number of bands, integral value and QP
   // It is only run once
-  if(mustLoadCutoffVariances){
+  if(mustLoadCutoffVariances and iagoEarlySkip){
     mustLoadCutoffVariances = 0;
     int height = pCtu->getPic()->getFrameHeightInCtus()*64;
 
