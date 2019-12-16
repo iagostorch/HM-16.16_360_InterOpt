@@ -360,7 +360,7 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
   // initialize CU data
   m_ppcBestCU[0]->initCtu( pCtu->getPic(), pCtu->getCtuRsAddr() );
   m_ppcTempCU[0]->initCtu( pCtu->getPic(), pCtu->getCtuRsAddr() );
-
+  
   // analysis of CU
   DEBUG_STRING_NEW(sDebug)
   
@@ -693,7 +693,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
       forceSkip = shouldForceSkip(rpcBestCU);
   else
       forceSkip = 0;
-
+  
   // iagostorch end
   if ( !bBoundary )
   {
@@ -1040,7 +1040,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
   int enableETTechnique = 0; // When enabled, the RD-Cost of current and co-located block in previous frame are compared to perform early termination
   int frameRow = rpcTempCU->getCUPelY()>>6;
   int currDepth = (int) rpcTempCU->getDepth(0);
-
+  
   // When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
   switch(currDepth){
       case 0: //64x64
@@ -1232,6 +1232,41 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
 
   // iagostorch
   
+  int enableCuSplit = 1;
+//  int cuHeight = 64 >> (rpcTempCU->getDepth(0));
+//  int absVertPos = rpcTempCU->getCUPelY() + cuHeight/2;
+//  float relativeVertPos = (float) absVertPos/(rpcTempCU->getPic()->getFrameHeightInCtus()*64);
+//  
+////  PRUN 1
+//  // 3 bandas,25/75/ max 2
+//  int maxDepth = 2;
+//  if (relativeVertPos < 0.25 or relativeVertPos > 0.75){
+//    enableCuSplit = rpcTempCU->getDepth(0) < maxDepth;
+//  }
+  
+//  PRUN2
+//  // 5 bandas, 15/35/65/85, max 1 e 2
+//  int maxPolarDepth = 1;
+//  int maxMidPolDepth = 2;
+//  if (relativeVertPos < 0.15 or relativeVertPos > 0.85){
+//    enableCuSplit = rpcTempCU->getDepth(0) < maxPolarDepth;
+//  }
+//  else if (relativeVertPos < 0.35 or relativeVertPos > 0.65){
+//      enableCuSplit = rpcTempCU->getDepth(0) < maxMidPolDepth;
+//  }
+  
+//  PRUN 3
+//  // 5 bandas, 10/25/75/90, max 1 e 2
+//  int maxPolarDepth = 1;
+//  int maxMidPolDepth = 2;
+//  if (relativeVertPos < 0.10 or relativeVertPos > 0.90){
+//    enableCuSplit = rpcTempCU->getDepth(0) < maxPolarDepth;
+//  }
+//  else if (relativeVertPos < 0.25 or relativeVertPos > 0.75){
+//      enableCuSplit = rpcTempCU->getDepth(0) < maxMidPolDepth;
+//  }
+      
+  if(enableCuSplit){ // forces the early termination of CTU recursion
   if(rpcTempCU->getSlice()->getSliceType() != I_SLICE || 
     (rpcTempCU->getSlice()->getSliceType() == I_SLICE && splitIntraCondition)){  // If this is true, then the current CU will be split
   if( bSubBranch && uiDepth < sps.getLog2DiffMaxMinCodingBlockSize() && (!getFastDeltaQp() || uiWidth > fastDeltaQPCuMaxSize || bBoundary))
@@ -1381,7 +1416,7 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
     }
   }
 } // iagostorch close bracket for split CU
-  
+} // iagostorch close bracket for outer split CU
   DEBUG_STRING_APPEND(sDebug_, sDebug);
 
   rpcBestCU->copyToPic(uiDepth);                                                     // Copy Best data to Picture for next partition prediction.
