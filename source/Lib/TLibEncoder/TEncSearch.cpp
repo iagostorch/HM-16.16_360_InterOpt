@@ -5013,7 +5013,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
 //      cout << "HORI INT\tVERT HALF" << endl;
       
       gettimeofday(&tv27, NULL); // iagostorch
-      xExtDIFUpSamplingH ( &cPatternRoi );
+      xExtDIFUpSamplingH_Vertical ( &cPatternRoi );
       gettimeofday(&tv28, NULL); // iagostorch
       halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
       
@@ -5026,7 +5026,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
 //      cout << "HORI INT\tVERT QUART" << endl;
       
       gettimeofday(&tv27, NULL); // iagostorch
-      xExtDIFUpSamplingH ( &cPatternRoi );
+      xExtDIFUpSamplingH_Vertical ( &cPatternRoi );
       gettimeofday(&tv28, NULL); // iagostorch
       halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
       
@@ -5036,7 +5036,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
       m_pcRdCost->setCostScale( 0 ); 
       
       gettimeofday(&tv29, NULL); // iagostorch
-      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      xExtDIFUpSamplingQ_Vertical ( &cPatternRoi, rcMvHalf );
       gettimeofday(&tv30, NULL); // iagostorch
       quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
 
@@ -5051,7 +5051,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
 //      cout << "HORI HALF\tVERT INT" << endl;
       
       gettimeofday(&tv27, NULL); // iagostorch
-      xExtDIFUpSamplingH ( &cPatternRoi );
+      xExtDIFUpSamplingH_Horizontal ( &cPatternRoi );
       gettimeofday(&tv28, NULL); // iagostorch
       halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
       
@@ -5085,9 +5085,8 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
       TComMv baseRefMv(0, 0);
       ruiCost = xPatternRefinement( pcPatternKey, baseRefMv, 2, rcMvHalf, !bIsLosslessCoded );
       m_pcRdCost->setCostScale( 0 ); 
-      
       gettimeofday(&tv29, NULL); // iagostorch
-      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      xExtDIFUpSamplingQ_Vertical ( &cPatternRoi, rcMvHalf );
       gettimeofday(&tv30, NULL); // iagostorch
       quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
       
@@ -5102,7 +5101,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
 //      cout << "HORI QUART\tVERT INT" << endl;
       
       gettimeofday(&tv27, NULL); // iagostorch
-      xExtDIFUpSamplingH ( &cPatternRoi );
+      xExtDIFUpSamplingH_Horizontal ( &cPatternRoi );
       gettimeofday(&tv28, NULL); // iagostorch
       halfGenTime += (double) (tv28.tv_usec - tv27.tv_usec)/1000000 + (double) (tv28.tv_sec - tv27.tv_sec); // iagostorch
 
@@ -5113,7 +5112,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
       m_pcRdCost->setCostScale( 0 );
   
       gettimeofday(&tv29, NULL); // iagostorch
-      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      xExtDIFUpSamplingQ_Horizontal ( &cPatternRoi, rcMvHalf );
       gettimeofday(&tv30, NULL); // iagostorch
       quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
       
@@ -5140,7 +5139,7 @@ Void TEncSearch::xPatternSearchFracDIF_adaptive(
       m_pcRdCost->setCostScale( 0 );
   
       gettimeofday(&tv29, NULL); // iagostorch
-      xExtDIFUpSamplingQ ( &cPatternRoi, rcMvHalf );
+      xExtDIFUpSamplingQ_Horizontal ( &cPatternRoi, rcMvHalf );
       gettimeofday(&tv30, NULL); // iagostorch
       quartGenTime += (double) (tv30.tv_usec - tv29.tv_usec)/1000000 + (double) (tv30.tv_sec - tv29.tv_sec); // iagostorch
       
@@ -6269,9 +6268,78 @@ Void  TEncSearch::xAddSymbolBitsInter( TComDataCU* pcCU, UInt& ruiBits )
   }
 }
 
+// iagostorch begin
+// These functions are simplifications of the xExtDIFUpSamplingH function
 
+// The following function generates the fractional samples at precision of half pixel
+// only in the horizontal direction
+Void TEncSearch::xExtDIFUpSamplingH_Horizontal( TComPattern* pattern )
+{
+  Int width      = pattern->getROIYWidth();
+//  cout << "FME Width  " << width  << endl;
+  Int height     = pattern->getROIYHeight();
+//  cout << "FME Height " << height << endl;
+//  cout << endl;
+  Int srcStride  = pattern->getPatternLStride();
 
+  Int intStride = m_filteredBlockTmp[0].getStride(COMPONENT_Y);
+  Int dstStride = m_filteredBlock[0][0].getStride(COMPONENT_Y);
+  Pel *intPtr;
+  Pel *dstPtr;
+  Int filterSize = NTAPS_LUMA;
+  Int halfFilterSize = (filterSize>>1);
+  Pel *srcPtr = pattern->getROIY() - halfFilterSize*srcStride - 1;
 
+  const ChromaFormat chFmt = m_filteredBlock[0][0].getChromaFormat();
+
+  m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, m_filteredBlockTmp[0].getAddr(COMPONENT_Y), intStride, width+1, height+filterSize, 0, false, chFmt, pattern->getBitDepthY());
+  // Next line generates half position to right. Useless for vertical FME
+  m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, m_filteredBlockTmp[2].getAddr(COMPONENT_Y), intStride, width+1, height+filterSize, 2, false, chFmt, pattern->getBitDepthY());
+
+  intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + halfFilterSize * intStride + 1;
+  dstPtr = m_filteredBlock[0][0].getAddr(COMPONENT_Y);
+  m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+0, height+0, 0, false, true, chFmt, pattern->getBitDepthY());
+
+//   Next line generates half position to right. Useless for vertical FME
+  intPtr = m_filteredBlockTmp[2].getAddr(COMPONENT_Y) + halfFilterSize * intStride;
+  dstPtr = m_filteredBlock[0][2].getAddr(COMPONENT_Y);
+  m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+1, height+0, 0, false, true, chFmt, pattern->getBitDepthY());
+}
+
+// The following function generates the fractional samples at precision of half pixel
+// only in the vertical direction
+Void TEncSearch::xExtDIFUpSamplingH_Vertical( TComPattern* pattern )
+{
+  Int width      = pattern->getROIYWidth();
+//  cout << "FME Width  " << width  << endl;
+  Int height     = pattern->getROIYHeight();
+//  cout << "FME Height " << height << endl;
+//  cout << endl;
+  Int srcStride  = pattern->getPatternLStride();
+
+  Int intStride = m_filteredBlockTmp[0].getStride(COMPONENT_Y);
+  Int dstStride = m_filteredBlock[0][0].getStride(COMPONENT_Y);
+  Pel *intPtr;
+  Pel *dstPtr;
+  Int filterSize = NTAPS_LUMA;
+  Int halfFilterSize = (filterSize>>1);
+  Pel *srcPtr = pattern->getROIY() - halfFilterSize*srcStride - 1;
+
+  const ChromaFormat chFmt = m_filteredBlock[0][0].getChromaFormat();
+
+  m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, m_filteredBlockTmp[0].getAddr(COMPONENT_Y), intStride, width+1, height+filterSize, 0, false, chFmt, pattern->getBitDepthY());
+
+  intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + halfFilterSize * intStride + 1;
+  dstPtr = m_filteredBlock[0][0].getAddr(COMPONENT_Y);
+  m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+0, height+0, 0, false, true, chFmt, pattern->getBitDepthY());
+
+  //   Next line generates half position to bottom. Useless for horizontal  FME
+  intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride + 1;
+  dstPtr = m_filteredBlock[2][0].getAddr(COMPONENT_Y);
+  m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width+0, height+1, 2, false, true, chFmt, pattern->getBitDepthY());
+}
+
+// iagostorch end
 
 /**
  * \brief Generate half-sample interpolated block
@@ -6325,6 +6393,162 @@ Void TEncSearch::xExtDIFUpSamplingH( TComPattern* pattern )
 
 
 
+// iagostorch begin
+// These functions are simplifications of the xExtDIFUpSamplingQ function
+
+// The following function generates the fractional samples at precision of quarter pixel
+// only in the vertical direction
+Void TEncSearch::xExtDIFUpSamplingQ_Vertical( TComPattern* pattern, TComMv halfPelRef )
+{
+ 
+  Int width      = pattern->getROIYWidth();
+  Int height     = pattern->getROIYHeight();
+
+  Int intStride = m_filteredBlockTmp[0].getStride(COMPONENT_Y);
+  Int dstStride = m_filteredBlock[0][0].getStride(COMPONENT_Y);
+  Pel *intPtr;
+  Pel *dstPtr;
+  Int filterSize = NTAPS_LUMA;
+
+  Int halfFilterSize = (filterSize>>1);
+
+//  Int extHeight = (halfPelRef.getVer() == 0) ? height + filterSize : height + filterSize-1;
+
+  const ChromaFormat chFmt = m_filteredBlock[0][0].getChromaFormat();
+
+  if (halfPelRef.getHor() != 0)
+  {
+    // Generate @ 1,2
+    intPtr = m_filteredBlockTmp[2].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride;
+    dstPtr = m_filteredBlock[1][2].getAddr(COMPONENT_Y);
+    if (halfPelRef.getHor() > 0)
+    {
+      intPtr += 1;
+    }
+    if (halfPelRef.getVer() >= 0)
+    {
+      intPtr += intStride;
+    }
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 1, false, true, chFmt, pattern->getBitDepthY());
+
+    // Generate @ 3,2
+    intPtr = m_filteredBlockTmp[2].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride;
+    dstPtr = m_filteredBlock[3][2].getAddr(COMPONENT_Y);
+    if (halfPelRef.getHor() > 0)
+    {
+      intPtr += 1;
+    }
+    if (halfPelRef.getVer() > 0)
+    {
+      intPtr += intStride;
+    }
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 3, false, true, chFmt, pattern->getBitDepthY());
+  }
+  else
+  {
+    // Generate @ 1,0
+    intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride + 1;
+    dstPtr = m_filteredBlock[1][0].getAddr(COMPONENT_Y);
+    if (halfPelRef.getVer() >= 0)
+    {
+      intPtr += intStride;
+    }
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 1, false, true, chFmt, pattern->getBitDepthY());
+
+    // Generate @ 3,0
+    intPtr = m_filteredBlockTmp[0].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride + 1;
+    dstPtr = m_filteredBlock[3][0].getAddr(COMPONENT_Y);
+    if (halfPelRef.getVer() > 0)
+    {
+      intPtr += intStride;
+    }
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 3, false, true, chFmt, pattern->getBitDepthY());
+  }
+}
+
+// The following function generates the fractional samples at precision of quarter pixel
+// only in the horizontal direction
+Void TEncSearch::xExtDIFUpSamplingQ_Horizontal( TComPattern* pattern, TComMv halfPelRef )
+{
+  Int width      = pattern->getROIYWidth();
+  Int height     = pattern->getROIYHeight();
+  Int srcStride  = pattern->getPatternLStride();
+
+  Pel *srcPtr;
+  Int intStride = m_filteredBlockTmp[0].getStride(COMPONENT_Y);
+  Int dstStride = m_filteredBlock[0][0].getStride(COMPONENT_Y);
+  Pel *intPtr;
+  Pel *dstPtr;
+  Int filterSize = NTAPS_LUMA;
+
+  Int halfFilterSize = (filterSize>>1);
+
+  Int extHeight = (halfPelRef.getVer() == 0) ? height + filterSize : height + filterSize-1;
+
+  const ChromaFormat chFmt = m_filteredBlock[0][0].getChromaFormat();
+
+  // Horizontal filter 1/4
+  srcPtr = pattern->getROIY() - halfFilterSize * srcStride - 1;
+  intPtr = m_filteredBlockTmp[1].getAddr(COMPONENT_Y);
+  if (halfPelRef.getVer() > 0)
+  {
+    srcPtr += srcStride;
+  }
+  if (halfPelRef.getHor() >= 0)
+  {
+    srcPtr += 1;
+  }
+  m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, intPtr, intStride, width, extHeight, 1, false, chFmt, pattern->getBitDepthY());
+
+  // Horizontal filter 3/4
+  srcPtr = pattern->getROIY() - halfFilterSize*srcStride - 1;
+  intPtr = m_filteredBlockTmp[3].getAddr(COMPONENT_Y);
+  if (halfPelRef.getVer() > 0)
+  {
+    srcPtr += srcStride;
+  }
+  if (halfPelRef.getHor() > 0)
+  {
+    srcPtr += 1;
+  }
+  m_if.filterHor(COMPONENT_Y, srcPtr, srcStride, intPtr, intStride, width, extHeight, 3, false, chFmt, pattern->getBitDepthY());
+
+  
+  if (halfPelRef.getVer() != 0)
+  {
+    // Generate @ 2,1
+    intPtr = m_filteredBlockTmp[1].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride;
+    dstPtr = m_filteredBlock[2][1].getAddr(COMPONENT_Y);
+    if (halfPelRef.getVer() == 0)
+    {
+      intPtr += intStride;
+    }
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 2, false, true, chFmt, pattern->getBitDepthY());
+
+    // Generate @ 2,3
+    intPtr = m_filteredBlockTmp[3].getAddr(COMPONENT_Y) + (halfFilterSize-1) * intStride;
+    dstPtr = m_filteredBlock[2][3].getAddr(COMPONENT_Y);
+    if (halfPelRef.getVer() == 0)
+    {
+      intPtr += intStride;
+    }
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 2, false, true, chFmt, pattern->getBitDepthY());
+  }
+  else
+  {
+    // Generate @ 0,1
+    intPtr = m_filteredBlockTmp[1].getAddr(COMPONENT_Y) + halfFilterSize * intStride;
+    dstPtr = m_filteredBlock[0][1].getAddr(COMPONENT_Y);
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 0, false, true, chFmt, pattern->getBitDepthY());
+
+    // Generate @ 0,3
+    intPtr = m_filteredBlockTmp[3].getAddr(COMPONENT_Y) + halfFilterSize * intStride;
+    dstPtr = m_filteredBlock[0][3].getAddr(COMPONENT_Y);
+    m_if.filterVer(COMPONENT_Y, intPtr, intStride, dstPtr, dstStride, width, height, 0, false, true, chFmt, pattern->getBitDepthY());
+  }
+}
+
+// iagostorch end
 
 /**
  * \brief Generate quarter-sample interpolated blocks

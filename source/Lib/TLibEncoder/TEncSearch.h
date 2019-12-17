@@ -462,7 +462,18 @@ protected:
 
   Void xExtDIFUpSamplingH( TComPattern* pcPattern );
   Void xExtDIFUpSamplingQ( TComPattern* pcPatternKey, TComMv halfPelRef );
-
+  
+  // iagostorch begin
+  
+  // These function headers represent simplifications of the xExtDIFUpSamplingH and xExtDIFUpSamplingQ
+  // functions, in which they were modified to generate fractional samples only in the horizontal
+  // or vertical direction
+  Void xExtDIFUpSamplingH_Vertical( TComPattern* pcPattern );
+  Void xExtDIFUpSamplingH_Horizontal( TComPattern* pcPattern );
+  Void xExtDIFUpSamplingQ_Vertical( TComPattern* pattern, TComMv halfPelRef );
+  Void xExtDIFUpSamplingQ_Horizontal( TComPattern* pattern, TComMv halfPelRef );
+  
+  // iagostorch end
   // -------------------------------------------------------------------------------------------------------------------
   // T & Q & Q-1 & T-1
   // -------------------------------------------------------------------------------------------------------------------
