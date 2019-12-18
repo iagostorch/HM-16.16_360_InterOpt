@@ -1,5 +1,4 @@
 #include <iostream>
-#include <array>
 #include <algorithm>
 
 void generatePuSizeDistribution(int frameHeight); // Ajdust the pointers of PU size distribution according to video resolution
