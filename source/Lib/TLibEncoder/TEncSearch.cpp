@@ -2695,7 +2695,9 @@ TEncSearch::estIntraPredLumaQT(TComDataCU* pcCU,
         assert(modesToEvaluate != -1);
         
         // Modes to be evaluated during RDO
-        Int RDO_modes[modesToEvaluate] = {-1, };
+        Int RDO_modes[modesToEvaluate];
+        for(int z=0;z<=modesToEvaluate;z++)
+            RDO_modes[z] = -1;
         
         // Find the modes with greater scores
         Int maxScoreMode = -1;

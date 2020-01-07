@@ -61,6 +61,7 @@ int maxCtuDepthMatrixPrevFrame[ctuDepthMatrixHeight][ctuDepthMatrixWidth]; // Ma
 int **cuDepthMatrixPrevFrame; // Depth achieved in each CU of previous frame. Indexed SAMPLE-wise. Same depth is replicated for samples of the same CU
 double **rdcDenseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Same RD-Cost is replicated for samples of the same CU
 double **rdcSparseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Only the UPPER-LEFT corner of each CU contains the RD-Cost, the other samples are empty
+int **evaluateIntraDenseMatrix; // This matrix holds the samples that can be evaluated using intra prediction for a CTU
 int refreshRate; // Frequency in which a frame is encoded without interference
 double minContribution; // Minimum contribution for which the intra early terminate technique will be evaluated. When the contribution of current PU size in current row is smaller than minContribution, the early termination technique is not evaluated
 
@@ -172,7 +173,11 @@ int main(int argc, char* argv[]) {
         rdcDenseMatrixPrevFrame[k] = (double*) malloc(cuDepthMatrixWidth * sizeof(double));
         rdcSparseMatrixPrevFrame[k] = (double*) malloc(cuDepthMatrixWidth * sizeof(double));
     }
-    
+    // Allocation for matrix representing the samples that can be predicted with intra prediction
+    evaluateIntraDenseMatrix = (int**) malloc(64 * sizeof(int*));
+    for(int k=0; k<64; k++){
+        evaluateIntraDenseMatrix[k] = (int*) malloc(64*sizeof(int));
+    }
     // iagostorch end
     TAppEncTop cTAppEncTop;
 

@@ -95,6 +95,7 @@ void loadCutoffVariances_3B(int frameHeight);          // These functions load t
 void loadCutoffVariances_5B_Polar(int frameHeight);    // Depending on integral value, number of bands and QP
 void loadCutoffVariances_5B_MidPolar(int frameHeight);
 void getRDCostPerDepth(TComDataCU* pCtu); // Extract the RD-Cost of each CU inside the current CTU
+void fillEvaluateIntraMatrix(int** matrix, int val, int firstX, int lastX, int firstY, int lastY); // Fill a region of the matrix with a given value
 void fillMatrixInt(int** matrix, int val, int firstX, int lastX, int firstY, int lastY); // Fill a region of the matrix with a given value
 void fillMatrixDouble(double** matrix, double val, int firstX, int lastX, int firstY, int lastY); // Fill a region of the matrix with a given value
 double sumMatrix(double** matrix, int firstX, int lastX, int firstY, int lastY); // Sum the values inside a region of the matrix
@@ -123,7 +124,7 @@ double RD_16[4][4];
 double RD_8[8][8];
 double RD_4[16][16];
 
-double BITS_64;;
+double BITS_64;
 double BITS_32[2][2];
 double BITS_16[4][4];
 double BITS_8[8][8];
@@ -139,6 +140,7 @@ extern int maxCtuDepthMatrixPrevFrame[ctuDepthMatrixHeight][ctuDepthMatrixWidth]
 extern int **cuDepthMatrixPrevFrame; // Depth achieved in each CU of previous frame. Indexed SAMPLE-wise. Same depth is replicated for samples of the same CU
 extern double **rdcDenseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Same RD-Cost is replicated for samples of the same CU
 extern double **rdcSparseMatrixPrevFrame; // RD-Cost achieved in each CU of previous frame. Indexed SAMPLE-wise. Only the UPPER-LEFT corner of each CU contains the RD-Cost, the other samples are empty
+extern int **evaluateIntraDenseMatrix;
 
 // iagostorch end
 
@@ -355,6 +357,9 @@ Void TEncCu::compressCtu( TComDataCU* pCtu )
         cout << "Error - Incorrect numbre of bands when loading cutoff variance" << endl;
     }
   }
+
+  fillEvaluateIntraMatrix(evaluateIntraDenseMatrix,1,0,64,0,64); // When starting the encoding of one CTU, all samples can be encoded with intra
+  
 // iagostorch end  
     
   // initialize CU data
@@ -681,10 +686,6 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
       maxDesiredDepth = MAX_DEPTH_PER_ROW[frameRow];
   }
     
-  if (rpcTempCU->getDepth(0) > (maxDesiredDepth-1))
-      splitIntraCondition = 0;
-  if (rpcTempCU->getDepth(0) > maxDesiredDepth)
-      evaluateIntraCondition = 0;
   if (maxDesiredDepth < 4)
       evaluateIntraNxNCondition = 0;
   
@@ -968,8 +969,15 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
           }
         }
         // iagostorch 
-        if(evaluateIntraCondition){ // If this is true, then the intra prediction will be performed in current CU
-        // do normal intra modes
+        int x = rpcTempCU->getCUPelX(); // Position inside the frame
+        int y = rpcTempCU->getCUPelY();
+        int xInternalPos = ((float)x/64 - x/64)*64; // Position inside the CTU
+        int yInternalPos = ((float)y/64 - y/64)*64; 
+        if(rdPUSizeReduction)
+            evaluateIntraCondition = evaluateIntraDenseMatrix[yInternalPos][xInternalPos]; 
+                                                                                                
+        if(evaluateIntraCondition == 1){ // If this is true, then the intra prediction will be performed in current CU
+            // do normal intra modes
         // speedup for inter frames
         if((rpcBestCU->getSlice()->getSliceType() == I_SLICE)                                        ||
             ((!m_pcEncCfg->getDisableIntraPUsInInterSlices()) && (
@@ -1118,7 +1126,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
         }
     }
     
-  
+    int samplesWideHigh = 64 >> rpcTempCU->getDepth(0);
+    
 //    cout << rpcTempCU->getCtuRsAddr() << endl; // CTU index
     switch (currDepth){ // Depending on the current depth, the current RD-Cost is stored in different variables (RD_64, RD_32[i][j], RD_16[i][j],...)
         case 0:   // 64x64
@@ -1130,6 +1139,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             if(RD_64 <= (thresholdRD * spatialRDCostPrevFrame)){
 //                cout << "\tEARLY TERMINATION 64x64" << endl;
                 splitIntraCondition = 0;
+                evaluateIntraCondition = 0;
+                fillEvaluateIntraMatrix(evaluateIntraDenseMatrix, 0, xInternalPos, xInternalPos+samplesWideHigh, yInternalPos, yInternalPos+samplesWideHigh);
             }
             break;
             
@@ -1143,6 +1154,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             if(RD_32[yId][xId] <= (thresholdRD * spatialRDCostPrevFrame)){
 //                cout << "\tEARLY TERMINATION 32x32" << endl;
                 splitIntraCondition = 0;
+                evaluateIntraCondition = 0;
+                fillEvaluateIntraMatrix(evaluateIntraDenseMatrix, 0, xInternalPos, xInternalPos+samplesWideHigh, yInternalPos, yInternalPos+samplesWideHigh);
             }
             break;
 
@@ -1156,6 +1169,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             if(RD_16[yId][xId] <= (thresholdRD * spatialRDCostPrevFrame)){
 //                cout << "\tEARLY TERMINATION 16x16" << endl;
                 splitIntraCondition = 0;
+                evaluateIntraCondition = 0;
+                fillEvaluateIntraMatrix(evaluateIntraDenseMatrix, 0, xInternalPos, xInternalPos+samplesWideHigh, yInternalPos, yInternalPos+samplesWideHigh);
             }
             break;    
        
@@ -1169,6 +1184,8 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             if(RD_8[yId][xId] <= (thresholdRD * spatialRDCostPrevFrame)){
 //                cout << "\tEARLY TERMINATION 8x8" << endl;
                 splitIntraCondition = 0;
+                evaluateIntraCondition = 0;
+                fillEvaluateIntraMatrix(evaluateIntraDenseMatrix, 0, xInternalPos, xInternalPos+samplesWideHigh, yInternalPos, yInternalPos+samplesWideHigh);
             }
             break;  
         case 4: // 4x4
@@ -1181,6 +1198,9 @@ Void TEncCu::xCompressCU( TComDataCU*& rpcBestCU, TComDataCU*& rpcTempCU, const 
             if(RD_4[yId][xId] <= (thresholdRD * spatialRDCostPrevFrame)){
 //                cout << "\tEARLY TERMINATION 4x4" << endl;
                 splitIntraCondition = 0;
+                evaluateIntraCondition = 0;
+                evaluateIntraNxNCondition = 0;
+                fillEvaluateIntraMatrix(evaluateIntraDenseMatrix, 0, xInternalPos, xInternalPos+samplesWideHigh, yInternalPos, yInternalPos+samplesWideHigh);
             }
             break; 
     }
@@ -6135,7 +6155,15 @@ void getRDCostPerDepth(TComDataCU* pCtu){
 void fillMatrixInt(int** matrix, int val, int firstX, int lastX, int firstY, int lastY){
     for(int i=firstY; i<lastY; i++){
         for(int j=firstX; j<lastX; j++){
-            matrix[i][j] = val;;
+            matrix[i][j] = val;
+        }
+    }    
+}
+
+void fillEvaluateIntraMatrix(int** matrix, int val, int firstX, int lastX, int firstY, int lastY){
+    for(int i=firstY; i<lastY; i++){
+        for(int j=firstX; j<lastX; j++){
+            matrix[i][j] = val;
         }
     }    
 }
@@ -6143,7 +6171,7 @@ void fillMatrixInt(int** matrix, int val, int firstX, int lastX, int firstY, int
 void fillMatrixDouble(double** matrix, double val, int firstX, int lastX, int firstY, int lastY){
     for(int i=firstY; i<lastY; i++){
         for(int j=firstX; j<lastX; j++){
-            matrix[i][j] = val;;
+            matrix[i][j] = val;
         }
     }
 }
