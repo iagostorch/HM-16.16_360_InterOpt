@@ -3,6 +3,14 @@
 
 This repository contains a set of algorithms to accelerate the intraframe and interframes prediction of 360 videos by exploring the properties of ERP projection. The algorithms are implemented over the [HEVC Test Model Version 16.16]  along [360Lib-5.0].
 
+All implementations available in this repository were already published in journals and conferences, and the proper citations and access links are listed below:
+
+- I. Storch, L. Agostini, B. Zatt, S. Bampi and D. Palomino, "[FastInter360: A Fast Inter Mode Decision for HEVC 360 Video Coding]," in IEEE Transactions on Circuits and Systems for Video Technology, doi: 10.1109/TCSVT.2021.3096752. 
+- I. Storch, G. Correa, B. Zatt, L. Agostini and D. Palomino, "[ESA360 - Early SKIP Mode Decision Algorithm for Fast ERP 360 Video Coding]," 2020 28th European Signal Processing Conference (EUSIPCO), 2021, pp. 535-539, doi: 10.23919/Eusipco47968.2020.9287774.
+- I. Storch, B. Zatt, L. Agostini, G. Correa, L. A. da Silva Cruz and D. Palomino, "[Spatially Adaptive Intra Mode Pre-Selection for ERP 360 Video Coding]," ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), 2020, pp. 2178-2182, doi: 10.1109/ICASSP40776.2020.9053374.
+- I. Storch, B. Zatt, L. Agostini, L. A. da Silva Cruz and D. Palomino, "[FastIntra360: A Fast Intra-Prediction Technique for 360-Degrees Video Coding]," 2019 Data Compression Conference (DCC), 2019, pp. 605-605, doi: 10.1109/DCC.2019.00117.
+
+
 ## Build Instructions
 To build the encoder for a linux platform, use the following commands: 
 ```sh
@@ -52,5 +60,9 @@ After building the encoder, the main encoding parameters are the same as of HM, 
 
    [HEVC Test Model Version 16.16]: <https://hevc.hhi.fraunhofer.de/svn/svn_HEVCSoftware/tags/HM-16.16/>
    [360Lib-5.0]: <https://jvet.hhi.fraunhofer.de/svn/svn_360Lib/tags/360Lib-5.0/>
+   [FastInter360: A Fast Inter Mode Decision for HEVC 360 Video Coding]: <https://ieeexplore.ieee.org/document/9481218>
+   [FastIntra360: A Fast Intra-Prediction Technique for 360-Degrees Video Coding]: <https://ieeexplore.ieee.org/document/8712776>
+   [ESA360 - Early SKIP Mode Decision Algorithm for Fast ERP 360 Video Coding]: <https://ieeexplore.ieee.org/document/9287774>
+   [Spatially Adaptive Intra Mode Pre-Selection for ERP 360 Video Coding]: <https://ieeexplore.ieee.org/document/9053374>
    
    
